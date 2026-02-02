@@ -40,7 +40,7 @@ Thumbs.db
 
 # Backend e Infraestrutura (NÃO COMMITAR)
 backend/
-supabase/
+/supabase/
 Procfile
 railway.json
 tsconfig.backend.json
