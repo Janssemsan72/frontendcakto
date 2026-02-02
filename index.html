@@ -138,14 +138,20 @@
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
 
-    <!-- ✅ Script UTMify Pixel (formato estático para garantir tracking) -->
+    <!-- ✅ UTMify/Facebook Pixel: carregado após LCP para não bloquear main-thread -->
     <script>
       window.pixelId = "68f98a3f196fbe7f0e5683c7";
-      var a = document.createElement("script");
-      a.setAttribute("async", "");
-      a.setAttribute("defer", "");
-      a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
-      document.head.appendChild(a);
+      function loadUtmifyPixel() {
+        var a = document.createElement("script");
+        a.src = "https://cdn.utmify.com.br/scripts/pixel/pixel.js";
+        a.async = true;
+        document.head.appendChild(a);
+      }
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(loadUtmifyPixel, { timeout: 4000 });
+      } else {
+        window.addEventListener("load", function() { setTimeout(loadUtmifyPixel, 2000); });
+      }
     </script>
 
     <!-- ✅ Script UTMify UTMs (formato estático para garantir tracking) -->

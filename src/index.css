@@ -33,8 +33,8 @@
   background-clip: padding-box;
 }
 
-/* Para Firefox */
-* {
+/* Firefox: apenas em scroll containers (evita non-composited em elementos animados) */
+html, body {
   scrollbar-width: thin;
   scrollbar-color: #D4BAA8 transparent;
 }
@@ -52,6 +52,11 @@
 
 .card-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #C7916B;
+}
+
+.card-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #D4BAA8 transparent;
 }
 
 /* Dynamic Viewport Height support */
@@ -787,29 +792,29 @@ All colors MUST be HSL.
   animation: slide-in-bottom 0.6s ease-out forwards;
 }
 
-/* Scroll animation base classes */
+/* Scroll animation: apenas transform+opacity (composited, evita jank) */
 .scroll-animate {
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.6s ease-out;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 .scroll-animate-left {
   opacity: 0;
   transform: translateX(-30px);
-  transition: all 0.6s ease-out;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 .scroll-animate-right {
   opacity: 0;
   transform: translateX(30px);
-  transition: all 0.6s ease-out;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 .scroll-animate-scale {
   opacity: 0;
   transform: scale(0.9);
-  transition: all 0.6s ease-out;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 /* Staggered animations */
