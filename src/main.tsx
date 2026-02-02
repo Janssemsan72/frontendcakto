@@ -165,13 +165,9 @@ if (typeof window !== 'undefined') {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        setupErrorHandlers();
-        // ✅ OTIMIZAÇÃO: Carregar i18n após error handlers (não bloqueia renderização)
-        requestIdleCallback(() => {
-          setupI18n();
-        }, { timeout: 1000 });
-      }, 200);
+      setupErrorHandlers();
+      // ✅ Logo primeiro: i18n e demais após paint (não bloqueia)
+      requestIdleCallback(() => setupI18n(), { timeout: 200 });
     });
   });
   
@@ -389,10 +385,8 @@ function initializeReact() {
         requestAnimationFrame(() => {
           window.__REACT_READY__ = true;
           window.dispatchEvent(new Event('react-ready'));
-          const placeholder = document.getElementById('ml-placeholder');
-          if (placeholder) {
-            placeholder.remove();
-          }
+          document.getElementById('ml-placeholder')?.remove();
+          document.getElementById('ml-header-shell')?.remove();
         });
       });
     };
@@ -504,10 +498,8 @@ function initializeReact() {
             requestAnimationFrame(() => {
               window.__REACT_READY__ = true;
               window.dispatchEvent(new Event('react-ready'));
-              const placeholder = document.getElementById('ml-placeholder');
-              if (placeholder) {
-                placeholder.remove();
-              }
+              document.getElementById('ml-placeholder')?.remove();
+              document.getElementById('ml-header-shell')?.remove();
             });
           });
         } catch (retryError) {

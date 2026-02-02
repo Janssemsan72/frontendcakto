@@ -156,6 +156,8 @@
       defer
     ></script>
     
+    <!-- ✅ Logo no header: preload para aparecer instantaneamente -->
+    <link rel="preload" as="image" href="/images/logo-white.png" fetchpriority="high" />
     <!-- ✅ OTIMIZAÇÃO LCP: Preload da imagem LCP com fetchpriority high -->
     <link
       rel="preload"
@@ -260,6 +262,13 @@
         } catch (e) {
           // Ignorar se sessionStorage não estiver disponível
         }
+        // Remover shell do header quando React estiver pronto
+        var onReactReady = function() {
+          var shell = document.getElementById('ml-header-shell');
+          if (shell) shell.remove();
+        };
+        if (window.__REACT_READY__) onReactReady();
+        else window.addEventListener('react-ready', onReactReady, { once: true });
       })();
     </script>
   </body>

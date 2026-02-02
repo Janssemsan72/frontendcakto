@@ -1,8 +1,8 @@
 import React, { memo, Suspense, useEffect, useRef, useState } from "react";
 import { scrollManager } from "@/utils/scrollManager";
 
-// ✅ OTIMIZAÇÃO PERFORMANCE: Lazy load do Header para reduzir bundle inicial
-const Header = React.lazy(() => import("@/components/Header"));
+// ✅ Logo primeiro: Header import direto para aparecer imediatamente
+import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 
 import { useUtmParams } from "@/hooks/useUtmParams";
@@ -456,10 +456,8 @@ const Index = memo(() => {
 
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
-      {/* ✅ OTIMIZAÇÃO PERFORMANCE: Header lazy loaded com fallback mínimo */}
-      <Suspense fallback={<div className="fixed top-0 left-0 right-0 z-50 h-[80px] bg-background border-b border-border/20" />}>
-        <Header />
-      </Suspense>
+      {/* ✅ Logo primeiro: Header import direto, renderiza imediatamente */}
+      <Header />
       <div 
         id="main-scroll-container"
         className="flex-1 overflow-y-auto overflow-x-hidden main-scroll-container"

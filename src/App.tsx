@@ -193,29 +193,28 @@ const AppContent = () => {
 
     const schedulePrefetch = () => {
       if (cancelled) return;
-      // ✅ OTIMIZAÇÃO: Prefetch mais cedo (reduzido de 12s para 3s)
+      // ✅ Logo primeiro: Prefetch imediato após load (100ms)
       if ('requestIdleCallback' in win) {
         const w = win as any;
-        idleId = w.requestIdleCallback(prefetch, { timeout: 3000 });
+        idleId = w.requestIdleCallback(prefetch, { timeout: 100 });
         return;
       }
-      // ✅ OTIMIZAÇÃO: Prefetch mais cedo (reduzido de 6s para 2s)
-      prefetchTimer = globalThis.setTimeout(prefetch, 2000);
+      prefetchTimer = globalThis.setTimeout(prefetch, 100);
     };
 
-    const onFirstInteraction = () => {
-      schedulePrefetch();
-    };
-
+    const onFirstInteraction = () => schedulePrefetch();
     win.addEventListener('pointerdown', onFirstInteraction, { once: true, passive: true });
     win.addEventListener('touchstart', onFirstInteraction, { once: true, passive: true });
     win.addEventListener('keydown', onFirstInteraction, { once: true });
+    if (document.readyState === 'complete') schedulePrefetch();
+    else win.addEventListener('load', schedulePrefetch, { once: true });
 
     return () => {
       cancelled = true;
       win.removeEventListener('pointerdown', onFirstInteraction);
       win.removeEventListener('touchstart', onFirstInteraction);
       win.removeEventListener('keydown', onFirstInteraction);
+      win.removeEventListener('load', schedulePrefetch);
       if (prefetchTimer != null) {
         globalThis.clearTimeout(prefetchTimer);
       }
@@ -252,20 +251,13 @@ const AppContent = () => {
       return;
     }
 
-    // Deferir até após paint
+    // ✅ Logo primeiro: Toaster/Sonner após paint (50ms - não bloqueia)
     if ('requestIdleCallback' in win) {
       const w = win as any;
-      const id = w.requestIdleCallback(() => {
-        setNonCriticalReady(true);
-      }, { timeout: 1000 });
-      return () => {
-        if (typeof w.cancelIdleCallback === 'function') {
-          w.cancelIdleCallback(id);
-        }
-      };
+      const id = w.requestIdleCallback(() => setNonCriticalReady(true), { timeout: 50 });
+      return () => w.cancelIdleCallback?.(id);
     }
-
-    const timer = setTimeout(() => setNonCriticalReady(true), 1000);
+    const timer = setTimeout(() => setNonCriticalReady(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
