@@ -22,28 +22,14 @@ module.exports = {
       }
     }
   },
-  // ✅ OTIMIZAÇÃO PERFORMANCE: Purge mais agressivo
-  purge: {
-    enabled: process.env.NODE_ENV === 'production',
-    content: [
-      "./index.html",
-      "./src/**/*.{js,ts,jsx,tsx}",
-    ],
-    // Safelist apenas para classes críticas que são geradas dinamicamente
-    safelist: [
-      'bg-primary',
-      'text-primary',
-      'border-primary',
-      'bg-background',
-      'text-foreground',
-    ],
-    // Remover classes não utilizadas mais agressivamente
-    defaultExtractor: (content) => {
-      const broadMatches = content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [];
-      const innerMatches = content.match(/[^<>"'`\s.()]*[^<>"'`\s.():]/g) || [];
-      return broadMatches.concat(innerMatches);
-    }
-  },
+  // Safelist para classes geradas dinamicamente (Tailwind v3 usa content acima)
+  safelist: [
+    'bg-primary',
+    'text-primary',
+    'border-primary',
+    'bg-background',
+    'text-foreground',
+  ],
   theme: {
     extend: {
       colors: {

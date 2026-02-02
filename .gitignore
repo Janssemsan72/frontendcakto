@@ -49,7 +49,7 @@ src/routes/
 src/index.ts
 
 # Scripts e Ferramentas (NÃO COMMITAR)
-scripts/
+scripts/*
 !scripts/validate-env.js
 scripts-admin/
 
