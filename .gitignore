@@ -1,0 +1,97 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Vite cache
+.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+**/.env
+
+# Relatórios Lighthouse (gerados localmente)
+lighthouse-report*.json
+lighthouse-report*.html
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ============================================
+# REGRAS RESTRITIVAS - APENAS FRONTEND ESSENCIAL
+# ============================================
+
+# Backend e Infraestrutura (NÃO COMMITAR)
+backend/
+supabase/
+Procfile
+railway.json
+tsconfig.backend.json
+bun.lockb
+src/routes/
+src/index.ts
+
+# Scripts e Ferramentas (NÃO COMMITAR)
+scripts/
+!scripts/validate-env.js
+scripts-admin/
+
+# Testes e Desenvolvimento (NÃO COMMITAR)
+src/__tests__/
+src/components/dev/
+src/pages/dev/
+playwright-report/
+test-results/
+*.test-results/
+
+# Documentação Desnecessária (NÃO COMMITAR)
+*.md
+!README.md
+!DEPLOY.md
+# Exceções específicas já cobertas acima
+
+# Diretórios Duplicados e Backups (NÃO COMMITAR)
+frontend/
+frontend/frontend/
+*/frontend/frontend/
+**/frontend/frontend/
+backups/
+Musiclovelyoficial-main/
+frontendmusiclovely-clone/
+custom-sound-forge-main*/
+
+# Arquivos de Teste e Desenvolvimento (NÃO COMMITAR)
+test-avatar-*.svg
+test-avatar-*.jpg
+test-avatar-*.png
+teste-modelos-claude.ps1
+test-anthropic-claude-api.ps1
+test-api-key-direto.ps1
+teste-anthropic-curl.ps1
+verify-stripe-products.js
+
+# Secrets e API Keys (NÃO COMMITAR)
+*API_KEY*.md
+*STRIPE*.md
+*ANTHROPIC*.md
+SOLUCAO_FINAL.md
+SOLUCAO_SECRET*.md
+CORRIGIR_*.md
+.cursor/plans/*.plan.md
