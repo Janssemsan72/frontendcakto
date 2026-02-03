@@ -1399,6 +1399,55 @@ body[data-admin="true"] main .badge {
       padding-left: 0.5rem !important;
       padding-right: 0.5rem !important;
     }
+    /* Garantir que o container pai da barra de pesquisa não limite o tamanho */
+    body[data-admin="true"] main .container > div:has(.search-bar-container) {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Barra de pesquisa e filtros - layout horizontal em todas as versões */
+    /* Container da barra de pesquisa - ocupa o espaço restante */
+    body[data-admin="true"] main .search-bar-container {
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+    body[data-admin="true"] main .search-bar-container [data-testid="search-input"] {
+      width: 100% !important;
+    }
+    /* Filtros muito pequenos - lado a lado em todas as versões */
+    body[data-admin="true"] main [data-testid="filter-status"],
+    body[data-admin="true"] main [data-testid="filter-plan"],
+    body[data-admin="true"] main [data-testid="filter-provider"] {
+      width: 60px !important;
+      min-width: 60px !important;
+      max-width: 60px !important;
+      flex-shrink: 0 !important;
+    }
+    @media (min-width: 768px) {
+      body[data-admin="true"] main [data-testid="filter-status"],
+      body[data-admin="true"] main [data-testid="filter-plan"],
+      body[data-admin="true"] main [data-testid="filter-provider"] {
+        width: 70px !important;
+        min-width: 70px !important;
+        max-width: 70px !important;
+      }
+    }
+    /* Garantir que os botões dos filtros sejam compactos */
+    body[data-admin="true"] main [data-testid="filter-status"] button,
+    body[data-admin="true"] main [data-testid="filter-plan"] button,
+    body[data-admin="true"] main [data-testid="filter-provider"] button {
+      padding-left: 0.25rem !important;
+      padding-right: 0.25rem !important;
+      font-size: 0.625rem !important;
+    }
+    @media (min-width: 768px) {
+      body[data-admin="true"] main [data-testid="filter-status"] button,
+      body[data-admin="true"] main [data-testid="filter-plan"] button,
+      body[data-admin="true"] main [data-testid="filter-provider"] button {
+        font-size: 0.75rem !important;
+      }
+    }
     
     /* Ajustar grid para mobile - uma coluna quando necessário */
     body[data-admin="true"] main [class*="grid"] {

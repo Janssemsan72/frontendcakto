@@ -443,7 +443,7 @@ export default function AdminOrders() {
         <CardHeader className="p-2 md:p-3">
           <CardTitle className="text-[10px] md:text-xs font-medium">Pedidos</CardTitle>
           <div 
-            className="flex flex-col md:flex-row gap-2 md:gap-3 mt-3 md:mt-4"
+            className="flex flex-row gap-1 md:gap-2 mt-3 md:mt-4 w-full items-center"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -451,7 +451,7 @@ export default function AdminOrders() {
               }
             }}
           >
-            <div className="relative flex-[8] sm:min-w-[500px] md:min-w-[700px] lg:min-w-[900px] xl:min-w-[1100px]">
+             <div className="relative search-bar-container flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground pointer-events-none z-10" />
             <Input
               data-testid="search-input"
@@ -464,12 +464,12 @@ export default function AdminOrders() {
                     e.stopPropagation();
                   }
                 }}
-              className="text-sm w-full !h-14 !text-base"
+              className="text-sm md:text-base w-full h-10 md:h-11"
               style={{ paddingLeft: '2.75rem' }}
             />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger data-testid="filter-status" className="w-full md:w-[100px] text-xs">
+              <SelectTrigger data-testid="filter-status" className="w-[60px] md:w-[70px] text-[10px] md:text-xs h-10 md:h-11 px-1 md:px-2 flex-shrink-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -481,7 +481,7 @@ export default function AdminOrders() {
               </SelectContent>
             </Select>
             <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger data-testid="filter-plan" className="w-full md:w-[100px] text-xs">
+              <SelectTrigger data-testid="filter-plan" className="w-[60px] md:w-[70px] text-[10px] md:text-xs h-10 md:h-11 px-1 md:px-2 flex-shrink-0">
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
               <SelectContent>
@@ -491,7 +491,7 @@ export default function AdminOrders() {
               </SelectContent>
             </Select>
             <Select value={providerFilter} onValueChange={setProviderFilter}>
-              <SelectTrigger data-testid="filter-provider" className="w-full md:w-[100px] text-xs">
+              <SelectTrigger data-testid="filter-provider" className="w-[60px] md:w-[70px] text-[10px] md:text-xs h-10 md:h-11 px-1 md:px-2 flex-shrink-0">
                 <SelectValue placeholder="Gateway" />
               </SelectTrigger>
               <SelectContent>
