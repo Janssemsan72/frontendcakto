@@ -247,7 +247,6 @@ export default function HeroSection() {
                 height={269}
                 sizes="(max-width: 640px) 384px, (max-width: 1024px) 640px, 1024px"
                 loading="eager"
-                fetchPriority="high"
                 decoding="async"
                 style={{ willChange: 'auto' }}
                 onError={(e) => {

@@ -227,9 +227,9 @@ export default function Testimonials() {
           if (!allError && allData && allData.length > 0) {
             // Se houver depoimentos mas nenhum ativo, usar os primeiros 3
             const processedData = allData.slice(0, 3).map((t, index) => ({
-              ...t,
+              ...(t as Record<string, unknown>),
               avatar_url: ensureAvatarUrl(t as Testimonial, index)
-            }));
+            })) as Testimonial[];
             setTestimonials(processedData);
             // ✅ OTIMIZAÇÃO FASE 3.2: Salvar no cache
             if (updateCache) {
@@ -245,9 +245,9 @@ export default function Testimonials() {
           }
         } else if (data && data.length > 0) {
           const processedData = data.map((t, index) => ({
-            ...t,
+            ...(t as Record<string, unknown>),
             avatar_url: ensureAvatarUrl(t as Testimonial, index)
-          }));
+          })) as Testimonial[];
           setTestimonials(processedData);
           // ✅ OTIMIZAÇÃO FASE 3.2: Salvar no cache
           if (updateCache) {

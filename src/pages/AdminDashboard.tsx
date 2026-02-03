@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseReady } from "@/integrations/supabase/client";
 import { useDashboardStats, useSunoCredits } from "@/hooks/useAdminData";
 import { queryClient, invalidateQueries } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,6 +132,11 @@ export default function AdminDashboard() {
   
   const loadRecentJobs = useCallback(async (page: number = jobsCurrentPage, pageSize: number = jobsPageSize) => {
     try {
+      const isOnline = typeof navigator === "undefined" ? true : navigator.onLine;
+      if (!isSupabaseReady() || !isOnline) {
+        setJobsLoading(false);
+        return;
+      }
       setJobsLoading(true);
       
       // Calcular range para paginação
@@ -155,7 +160,9 @@ export default function AdminDashboard() {
         setJobsTotal(totalCount || 0);
       }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      if ((error as any)?.name !== "AbortError") {
+        console.error('Erro ao carregar dados:', error);
+      }
     } finally {
       setJobsLoading(false);
     }
@@ -163,6 +170,11 @@ export default function AdminDashboard() {
 
   const loadRecentSongs = useCallback(async () => {
     try {
+      const isOnline = typeof navigator === "undefined" ? true : navigator.onLine;
+      if (!isSupabaseReady() || !isOnline) {
+        setSongsLoading(false);
+        return;
+      }
       setSongsLoading(true);
       const songsResult = await supabase
         .from("songs")
@@ -173,7 +185,9 @@ export default function AdminDashboard() {
       if (songsResult.data) setSongs(songsResult.data);
       hasLoadedSongsRef.current = true;
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      if ((error as any)?.name !== "AbortError") {
+        console.error('Erro ao carregar dados:', error);
+      }
     } finally {
       setSongsLoading(false);
     }

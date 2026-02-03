@@ -15,7 +15,11 @@
     "typecheck": "tsc --noEmit",
     "compress-video": "node scripts/compress-video.js",
     "analyze-bundle": "node scripts/analyze-bundle.js",
-    "validate-env": "node scripts/validate-env.js"
+    "validate-env": "node scripts/validate-env.js",
+    "validate:supabase": "node scripts/validate-supabase.js",
+    "reprocess:cakto-failures": "node scripts/reprocess-cakto-failures.js",
+    "setup:cakto-failures-table": "node scripts/setup-cakto-failures-table.js",
+    "cakto:setup-all": "node scripts/run-all-cakto-setup.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.12",
@@ -80,6 +84,7 @@
     "autoprefixer": "10.4.23",
     "cross-env": "^7.0.3",
     "jsdom": "^24.0.0",
+    "pg": "^8.18.0",
     "postcss": "8.5.6",
     "rollup-plugin-visualizer": "^6.0.5",
     "tailwindcss": "3.4.19",

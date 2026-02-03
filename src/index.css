@@ -579,25 +579,154 @@ All colors MUST be HSL.
 
   /* Modern Variant - Gradient with smooth animations */
   .enhanced-tabs-modern {
-    @apply h-14 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-1.5 text-amber-800 border border-amber-200 shadow-sm;
+    @apply h-14 rounded-lg p-1.5 text-amber-800 border border-amber-200 shadow-sm;
     background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fde68a 100%);
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+  }
+  /* Sobrescrever qualquer classe Tailwind de gradiente no modern */
+  .enhanced-tabs-modern.bg-gradient-to-r,
+  .enhanced-tabs-modern[class*="from-amber-50"],
+  .enhanced-tabs-modern[class*="to-orange-50"],
+  .enhanced-tabs-modern[class*="via-yellow-50"] {
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fde68a 100%) !important;
+    background-image: linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fde68a 100%) !important;
   }
 
   .enhanced-tabs-modern .enhanced-tabs-trigger {
     @apply px-8 py-3 rounded-md transition-all duration-300 flex items-center gap-2 font-semibold text-base;
     transform: translateY(0);
   }
+  .enhanced-tabs-modern.enhanced-tabs-lyrics .enhanced-tabs-trigger:not([data-active="true"]) {
+    background: transparent !important;
+    background-image: none !important;
+  }
 
-  .enhanced-tabs-modern .enhanced-tabs-trigger:hover {
-    @apply bg-amber-100 text-amber-900 shadow-md;
+  .enhanced-tabs-modern.enhanced-tabs-lyrics .enhanced-tabs-trigger:hover:not([data-active="true"]) {
+    background: linear-gradient(to right, #fde68a, #fed7aa) !important;
+    background-image: linear-gradient(to right, #fde68a, #fed7aa) !important;
+    @apply text-amber-900 shadow-md;
     transform: translateY(-1px);
   }
 
   .enhanced-tabs-modern .enhanced-tabs-trigger[data-active="true"] {
-    @apply bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg;
+    background: linear-gradient(to right, #d97706, #ea580c) !important;
+    @apply text-white shadow-lg;
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  /* Gerenciar Letras: 3 botões ocupam toda a largura, degradê no container */
+  .enhanced-tabs-lyrics,
+  .enhanced-tabs-modern.enhanced-tabs-lyrics,
+  div.enhanced-tabs-modern.enhanced-tabs-lyrics,
+  .items-center.justify-center.enhanced-tabs-modern.enhanced-tabs-lyrics {
+    @apply w-full gap-1 md:gap-2;
+    padding: 0.375rem !important;
+    background: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-image: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-size: 100% 100% !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: none !important;
+  }
+  /* Sobrescrever qualquer classe Tailwind que possa estar aplicando gradiente */
+  .enhanced-tabs-lyrics.bg-gradient-to-r,
+  .enhanced-tabs-modern.enhanced-tabs-lyrics.bg-gradient-to-r,
+  .enhanced-tabs-lyrics[class*="from-amber-50"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="from-amber-50"],
+  .enhanced-tabs-lyrics[class*="to-orange-50"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="to-orange-50"],
+  .enhanced-tabs-lyrics[class*="via-yellow-50"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="via-yellow-50"],
+  div.items-center.justify-center.enhanced-tabs-modern.enhanced-tabs-lyrics,
+  div[class*="items-center"][class*="justify-center"][class*="enhanced-tabs-modern"][class*="enhanced-tabs-lyrics"] {
+    background: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-image: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+  }
+  .enhanced-tabs-modern.enhanced-tabs-lyrics,
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="bg-gradient"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics.bg-gradient-to-r,
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="from-amber-50"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="to-orange-50"],
+  .enhanced-tabs-modern.enhanced-tabs-lyrics[class*="via-yellow-50"] {
+    background: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-image: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-color: transparent !important;
+  }
+  /* Sobrescrever qualquer classe Tailwind de gradiente */
+  div.enhanced-tabs-modern.enhanced-tabs-lyrics,
+  div[class*="enhanced-tabs-modern"][class*="enhanced-tabs-lyrics"] {
+    background: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+    background-image: linear-gradient(to right, #fef3c7, #fed7aa, #fde68a) !important;
+  }
+  /* Remover gradiente dos botões e aplicar apenas no container */
+  .enhanced-tabs-lyrics button:not([aria-selected="true"]),
+  .enhanced-tabs-lyrics button[aria-selected="false"] {
+    background: transparent !important;
+    background-image: none !important;
+  }
+  .enhanced-tabs-lyrics.grid,
+  .enhanced-tabs-lyrics[class*="grid"] {
+    display: flex !important;
+    grid-template-columns: none !important;
+  }
+  .enhanced-tabs-lyrics button {
+    @apply flex-1 justify-center rounded-md py-2 md:py-3 flex items-center gap-2 font-semibold text-sm md:text-base min-w-0;
+    transform: none;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+  .enhanced-tabs-lyrics button:not([aria-selected="true"]),
+  .enhanced-tabs-lyrics button[aria-selected="false"],
+  .enhanced-tabs-lyrics button[role="tab"]:not([aria-selected="true"]) {
+    background: transparent !important;
+    background-image: none !important;
+  }
+  /* Remover gradiente dos botões inativos */
+  .enhanced-tabs-lyrics button.bg-gradient-to-r:not([aria-selected="true"]),
+  .enhanced-tabs-lyrics button[class*="from-amber-50"]:not([aria-selected="true"]),
+  .enhanced-tabs-lyrics button[class*="to-orange-50"]:not([aria-selected="true"]) {
+    background: transparent !important;
+    background-image: none !important;
+  }
+  .enhanced-tabs-lyrics button:not([aria-selected="true"]):hover,
+  .enhanced-tabs-lyrics button[aria-selected="false"]:hover {
+    background: rgba(254, 243, 199, 0.3) !important;
+    background-image: none !important;
+  }
+  .enhanced-tabs-lyrics button[aria-selected="true"] {
+    background: linear-gradient(to right, #d97706, #ea580c) !important;
+    background-image: linear-gradient(to right, #d97706, #ea580c) !important;
+  }
+  .enhanced-tabs-lyrics button[class*="whitespace-nowrap"] {
+    white-space: normal !important;
+  }
+  .enhanced-tabs-lyrics button span:not(.flex-shrink-0),
+  .enhanced-tabs-lyrics button > span {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: inline !important;
+  }
+  .enhanced-tabs-lyrics button .truncate,
+  .enhanced-tabs-lyrics button span.truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+  .enhanced-tabs-lyrics button .hidden,
+  .enhanced-tabs-lyrics button span.hidden {
+    display: none !important;
+  }
+  .enhanced-tabs-lyrics button span.sm\\:hidden {
+    display: none !important;
+  }
+  .enhanced-tabs-lyrics button span.hidden.sm\\:inline {
+    display: inline !important;
   }
 
   /* Pills Variant - Rounded modern look */

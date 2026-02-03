@@ -111,7 +111,7 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
               console.error('[CheckoutRedirectWrapper] Pedido não encontrado ou inválido', {
                 hasError: !!error,
                 hasOrderData: !!orderData,
-                status: orderData?.status,
+                status: orderData != null ? orderData.status : undefined,
               });
             }
           }

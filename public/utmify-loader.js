@@ -6,6 +6,8 @@
   var isProd =
     hostname === 'musiclovely.com' ||
     hostname === 'www.musiclovely.com' ||
+    hostname === 'musiclovely.com' ||
+    hostname === 'www.musiclovely.com' ||
     hostname === 'musiclovely.com.br' ||
     hostname === 'www.musiclovely.com.br' ||
     hostname.endsWith('.vercel.app');

@@ -141,19 +141,35 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
     placeholderData: (previousData) => previousData, // ✅ Manter dados anteriores durante refetch (evita piscar)
   });
 
-  // ✅ OTIMIZAÇÃO: Query separada para contar o total usando COUNT (muito mais rápido)
-  // ✅ NOTA: Contagem sempre habilitada para mostrar totais corretos nas badges
+  // ✅ OTIMIZAÇÃO: Query separada para contar o total
+  // ✅ CORREÇÃO: Priorizar RPC count_lyrics_approvals_by_status (SECURITY DEFINER) - bypassa RLS e retorna count real (60k+)
   const { data: totalCount, isLoading: isLoadingCount } = useQuery({
     queryKey: ["lyrics-approvals-count", status, includeExpired],
-    enabled: true, // ✅ Sempre habilitado para mostrar totais corretos
+    enabled: true,
     queryFn: async () => {
       try {
-        // ✅ OTIMIZAÇÃO: Usar COUNT do Supabase (muito mais rápido que buscar todos os dados)
+        // ✅ RPC bypassa RLS - retorna count real mesmo com 60k+ registros
+        if (status.length === 1) {
+          const { data: rpcCount, error: rpcError } = await supabase.rpc('count_lyrics_approvals_by_status', {
+            p_status: status[0],
+            p_include_expired: includeExpired
+          });
+
+          if (!rpcError && rpcCount !== null && rpcCount !== undefined) {
+            return Number(rpcCount);
+          }
+          // Se RPC falhar (ex: função não existe ainda), continua para fallback
+          if (isDev && rpcError) {
+            console.warn('⚠️ [useLyricsApprovals] RPC count falhou, usando fallback:', rpcError.message);
+          }
+        }
+
+        // Fallback: query via REST (pode retornar count limitado por RLS)
         let countQuery = supabase
           .from("lyrics_approvals")
-          .select("*", { count: 'exact', head: true }); // ✅ COUNT sem buscar dados
-        
-        // ✅ CORREÇÃO: Usar .eq() para array com um elemento, .in() para múltiplos
+          .select("id", { count: 'exact' })
+          .range(0, 0);
+
         if (status.length === 1) {
           countQuery = countQuery.eq("status", status[0]);
         } else {
@@ -169,16 +185,10 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
 
         if (error) {
           logger.warn('Erro ao contar lyrics approvals', error);
-          if (isDev) {
-            console.error('❌ [useLyricsApprovals] Erro ao contar:', error);
-          }
-          // ✅ FALLBACK: Se COUNT falhar, tentar contar manualmente (mais lento)
           return await countManually();
         }
 
-        // ✅ OTIMIZAÇÃO: Removido filtro de email_logs - muito lento e não crítico
-        // O filtro pode ser aplicado no backend via view/materialized view se necessário
-        return count || 0;
+        return count ?? 0;
       } catch (error) {
         logger.warn('Erro ao contar lyrics approvals', error);
         if (isDev) {
@@ -187,7 +197,7 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
         return null;
       }
     },
-    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 

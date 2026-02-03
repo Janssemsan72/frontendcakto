@@ -181,7 +181,7 @@ export default function AdminReleases() {
 
       // ✅ CORREÇÃO: Filtrar manualmente músicas sem audio_url (fallback adicional)
       // Mesmo que o filtro do Supabase funcione, garantimos que só processamos músicas com áudio
-      const songsWithAudio = songs.filter(s => s.audio_url && s.audio_url.trim() !== '');
+      const songsWithAudio = songs?.filter(s => s.audio_url && s.audio_url.trim() !== '') || [];
       
       if (songsWithAudio.length === 0) {
         throw new Error('Nenhuma música com áudio encontrada');
@@ -560,14 +560,14 @@ export default function AdminReleases() {
             
             {/* Busca na mesma linha do título */}
             {!loading && orders && orders.length > 0 && (
-              <div className="flex-1 ml-4">
+              <div className="flex-1 md:flex-[1.5] ml-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                   <Input
                     placeholder="Buscar por email, nome ou música..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-11 pr-10 w-full"
+                    className="pl-11 pr-10 w-full h-12 md:h-12 text-base"
                     style={{ paddingLeft: '2.75rem' }}
                     aria-label="Buscar pedidos"
                   />
@@ -849,7 +849,7 @@ export default function AdminReleases() {
                           }
                         }}
                         disabled={isDisabled}
-                        className="w-full bg-[#B88860] hover:bg-[#A67850] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70 text-xs py-1.5 h-8"
+                        className="w-full !bg-[#B88860] !hover:bg-[#A67850] !text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70 disabled:!bg-[#B88860] text-xs py-1.5 h-8"
                         title={!hasEnoughSongs ? `É necessário ter pelo menos 2 músicas para enviar. Atualmente há ${songsCount} música(s).` : songsCount > 2 ? `Enviar as 2 músicas mais recentes (de ${songsCount} disponíveis)` : 'Enviar músicas'}
                       >
                         {isThisCardLoading ? (

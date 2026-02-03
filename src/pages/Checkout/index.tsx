@@ -85,6 +85,15 @@ type Plan = {
   features: string[];
 };
 
+type CheckoutOrder = Database['public']['Tables']['orders']['Row'] & {
+  cakto_payment_url?: string | null;
+};
+
+type CheckoutOrderResponse = {
+  data: CheckoutOrder | null;
+  error: { message?: string; code?: string; details?: string; hint?: string } | null;
+};
+
 // ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
 const getCaktoConfig = () => {
   return {
@@ -95,29 +104,16 @@ const getCaktoConfig = () => {
 };
 
 // ✅ Função para selecionar gateway de pagamento
-// SEMPRE retorna 'hotmart' como método de pagamento padrão
+// SEMPRE retorna 'cakto' como método de pagamento padrão
 const getPaymentGateway = () => {
   // Verificar variável de ambiente primeiro (permite override se necessário)
   const envGateway = import.meta.env.VITE_PAYMENT_GATEWAY;
-  if (envGateway === 'hotmart' || envGateway === 'cakto') {
+  if (envGateway === 'cakto') {
     return envGateway;
   }
   
-  // Sempre usar Hotmart como padrão
-  return 'hotmart';
-};
-
-// ✅ Configuração da Hotmart
-const getHotmartConfig = () => {
-  // URL completa do gateway de pagamento: https://pay.cakto.com.br/d877u4t_665160
-  const checkoutUrl = import.meta.env.VITE_HOTMART_CHECKOUT_URL || 'https://pay.cakto.com.br/d877u4t_665160';
-  const productId = import.meta.env.VITE_HOTMART_PRODUCT_ID || '6840691';
-  return {
-    url: checkoutUrl,
-    product_id: productId,
-    amount_cents: 4790,
-    price_display: 4790
-  };
+  // Sempre usar Cakto como padrão
+  return 'cakto';
 };
 
 // ✅ OTIMIZAÇÃO: Preload de recursos críticos antes do componente renderizar
@@ -148,7 +144,7 @@ export default function Checkout() {
   }, []);
   
   // ⚠️ CRÍTICO: Verificação IMEDIATA antes de qualquer processamento
-  // Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Hotmart
+  // Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Cakto
   // Isso deve acontecer ANTES de qualquer lógica do componente
   const urlParams = new URLSearchParams(window.location.search);
   const messageId = urlParams.get('message_id');
@@ -162,41 +158,16 @@ export default function Checkout() {
   
   useEffect(() => {
     if (messageId && orderId && !window.location.href.includes('pay.cakto.com.br') && !isRedirecting) {
-      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Hotmart ANTES de processar...');
+      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Cakto ANTES de processar...');
       setIsRedirecting(true);
       
       // Buscar pedido e redirecionar IMEDIATAMENTE
-      supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single()
-        .then(({ data: orderData, error }) => {
+      fetchOrderById(orderId).then(async ({ data: orderData, error }) => {
           if (!error && orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-            const hotmartConfig = getHotmartConfig();
-            const HOTMART_CHECKOUT_URL = hotmartConfig.url;
-            
-            // Normalizar WhatsApp e garantir prefixo 55
-            let normalizedWhatsapp = orderData.customer_whatsapp.replace(/\D/g, '');
-            if (!normalizedWhatsapp.startsWith('55')) {
-              normalizedWhatsapp = `55${normalizedWhatsapp}`;
+            const redirectSuccess = await redirectToCakto(orderData, utmsForRedirect, 'pt');
+            if (!redirectSuccess) {
+              setIsRedirecting(false);
             }
-            
-            // ✅ SIMPLIFICADO: Gerar URL da Hotmart com UTMs do hook
-            const hotmartUrl = generateHotmartUrl(
-              orderData.id,
-              orderData.customer_email,
-              orderData.customer_whatsapp,
-              'pt',
-              utmsForRedirect
-            );
-            
-            logger.debug('Redirecionando IMEDIATAMENTE para Hotmart', { 
-              hotmartUrl: hotmartUrl.substring(0, 100),
-              utmsCount: Object.keys(utmsForRedirect).length
-            });
-            // ⚠️ CRÍTICO: Usar window.location.replace para evitar que o React Router intercepte
-            window.location.replace(hotmartUrl);
           } else {
             setIsRedirecting(false);
           }
@@ -282,10 +253,18 @@ export default function Checkout() {
     return `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
   };
 
+  const fetchOrderById = async (id: string): Promise<CheckoutOrderResponse> => {
+    return (await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single()) as CheckoutOrderResponse;
+  };
+
   // Função auxiliar para redirecionar para Cakto
   // Retorna true se sucesso, false se falhou
   const redirectToCakto = async (
-    orderData: any,
+    orderData: CheckoutOrder,
     utmsParam?: Record<string, string | null>,
     language: string = 'pt'
   ): Promise<boolean> => {
@@ -323,7 +302,7 @@ export default function Checkout() {
         logger.debug('redirectToCakto: Salvando URL da Cakto no pedido...');
         const { error: updateError } = await supabase
           .from('orders')
-          .update({ cakto_payment_url: caktoUrl })
+          .update({ cakto_payment_url: caktoUrl } as Database['public']['Tables']['orders']['Update'])
           .eq('id', orderData.id);
         
         if (updateError) {
@@ -382,133 +361,7 @@ export default function Checkout() {
     }
   };
 
-  // Função auxiliar para gerar URL da Hotmart (versão compacta)
-  // ✅ CORREÇÃO: Usar utms diretamente do escopo (como generateCaktoUrl)
-  const generateHotmartUrl = (
-    orderId: string,
-    email: string,
-    whatsapp: string,
-    language: string,
-    utms?: Record<string, string | null> // Parâmetro opcional para compatibilidade
-  ): string => {
-    const hotmartConfig = getHotmartConfig();
-    const HOTMART_CHECKOUT_URL = hotmartConfig.url;
-    
-    // Normalizar WhatsApp para formato correto (55XXXXXXXXXXX)
-    const normalizedWhatsapp = formatWhatsappForCakto(whatsapp);
-    
-    // Criar URL base (https://pay.cakto.com.br/d877u4t_665160)
-    const url = new URL(HOTMART_CHECKOUT_URL);
-    
-    // ✅ Cakto: email e phone para pré-preencher checkout
-    url.searchParams.set('email', email);
-    if (normalizedWhatsapp && normalizedWhatsapp.trim() !== '') {
-      // Cakto usa 'phone' com formato completo: 55XXXXXXXXXXX
-      url.searchParams.set('phone', normalizedWhatsapp);
-    }
-    
-    // ✅ CORREÇÃO: Usar allTrackingParams para incluir xcod e outros parâmetros além dos UTMs padrão
-    // A Hotmart processa e exibe em "Origem" e "Origem de Checkout": utm_source, utm_medium, utm_campaign, utm_content, utm_term, src, sck, xcod
-    const safeUtms = utms || allTrackingParams || {};
-    
-    // Parâmetros que a Hotmart processa e exibe corretamente (conforme documentação)
-    const hotmartTrackingParams = [
-      // UTMs padrão (essenciais para Hotmart)
-      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-      // Parâmetros específicos da Hotmart
-      'src', 'sck',
-      // ✅ CORREÇÃO: Adicionar xcod para tracking completo
-      'xcod',
-    ];
-    
-    // ✅ CORREÇÃO: Adicionar todos os UTMs válidos (como generateCaktoUrl)
-    // Filtrar apenas para parâmetros que a Hotmart processa
-    Object.entries(safeUtms).forEach(([key, value]) => {
-      if (value && typeof value === 'string' && value.trim() !== '') {
-        if (hotmartTrackingParams.includes(key)) {
-          url.searchParams.set(key, value.trim());
-        }
-      }
-    });
-    
-    return url.toString();
-  };
-
-  // Função auxiliar para redirecionar para Hotmart
-  // Retorna true se sucesso, false se falhou
-  const redirectToHotmart = async (
-    orderData: any,
-    utmsParam?: Record<string, string | null>,
-    language: string = 'pt'
-  ): Promise<boolean> => {
-    try {
-      // Verificar se pedido tem dados necessários
-      if (!orderData.customer_email || !orderData.customer_whatsapp) {
-        logger.error('redirectToHotmart: Pedido sem email ou WhatsApp');
-        return false;
-      }
-
-      // Gerar URL da Hotmart com UTMs
-      // ✅ CORREÇÃO: Usar allTrackingParams para incluir xcod
-      const safeUtms = utmsParam || allTrackingParams || {};
-      const hotmartUrl = generateHotmartUrl(
-        orderData.id,
-        orderData.customer_email,
-        orderData.customer_whatsapp,
-        language,
-        safeUtms
-      );
-      
-      // Salvar URL no pedido
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ hotmart_payment_url: hotmartUrl })
-        .eq('id', orderData.id);
-      
-      if (updateError) {
-        logger.error('redirectToHotmart: Erro ao salvar URL da Hotmart', updateError);
-      }
-      
-      // Validar URL antes de redirecionar
-      if (!hotmartUrl || !hotmartUrl.startsWith('http')) {
-        logger.error('redirectToHotmart: URL inválida', { hotmartUrl });
-        return false;
-      }
-
-      // Verificar se não estamos já na Hotmart
-      if (window.location.hostname === 'pay.cakto.com.br') {
-        return true;
-      }
-
-      logger.debug('redirectToHotmart: Redirecionando para Hotmart', {
-        orderId: orderData.id,
-        urlPreview: hotmartUrl.substring(0, 100)
-      });
-
-      // Redirecionamento imediato sem setTimeout
-      // Usar window.location.replace() para evitar que React Router intercepte
-      logger.debug('redirectToHotmart: Executando redirecionamento imediato com window.location.replace()');
-      try {
-        window.location.replace(hotmartUrl);
-        logger.debug('redirectToHotmart: window.location.replace() executado com sucesso');
-      } catch (error) {
-        logger.error('redirectToHotmart: Erro ao executar window.location.replace()', error);
-        // Fallback: tentar com href
-        try {
-          window.location.href = hotmartUrl;
-          logger.debug('redirectToHotmart: Fallback para window.location.href executado');
-        } catch (hrefError) {
-          logger.error('redirectToHotmart: Erro também no fallback href', hrefError);
-          return false;
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      logger.error('redirectToHotmart: Erro ao redirecionar', error);
-      return false;
-    }
-  };
+  
   
   logger.debug('Idioma detectado', {
     pathname: window.location.pathname,
@@ -664,28 +517,24 @@ export default function Checkout() {
       const messageId = urlParams.get('message_id');
       const auto = urlParams.get('auto');
       
-      // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Hotmart
+      // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Cakto
       // Isso evita que o React Router processe como checkout interno
       if (messageId && orderId && !window.location.href.includes('pay.cakto.com.br')) {
         logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando IMEDIATAMENTE para Cakto...');
         setLoading(true);
         
         try {
-          const { data: orderData } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
+          const { data: orderData } = await fetchOrderById(orderId);
           
           if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-            logger.debug('Pedido encontrado, redirecionando para Hotmart...');
-            const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+            logger.debug('Pedido encontrado, redirecionando para Cakto...');
+            const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
             if (redirectSuccess) {
               return; // Redirecionamento bem-sucedido, sair da função
             }
           }
         } catch (redirectError) {
-          logger.error('Erro ao redirecionar para Hotmart', redirectError);
+          logger.error('Erro ao redirecionar para Cakto', redirectError);
           // Continuar com fluxo normal se redirecionamento falhar
         }
       }
@@ -781,29 +630,24 @@ export default function Checkout() {
         const messageId = urlParams.get('message_id');
         if (messageId || auto === 'true') {
           // Se veio do WhatsApp (tem message_id) ou auto=true, redirecionar para Cakto
-          logger.debug('URL do WhatsApp detectada com restore=true, redirecionando para Hotmart...');
+          logger.debug('URL do WhatsApp detectada com restore=true, redirecionando para Cakto...');
           setLoading(true);
           
           try {
-            // Buscar pedido PRIMEIRO (mais importante para redirecionamento)
-            const { data: orderData, error: orderError } = await supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderId)
-              .single();
+            const { data: orderData, error: orderError } = await fetchOrderById(orderId);
             
             if (orderError || !orderData) {
               logger.error('Erro ao buscar pedido para redirecionamento', orderError);
               // Continuar com fluxo normal se não conseguir buscar pedido
             } else if (orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-              logger.debug('Pedido encontrado, redirecionando para Hotmart...');
-              const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+              logger.debug('Pedido encontrado, redirecionando para Cakto...');
+              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
               if (redirectSuccess) {
                 return; // Redirecionamento bem-sucedido, sair da função
               }
             }
           } catch (redirectError) {
-            logger.error('Erro ao redirecionar para Hotmart', redirectError);
+            logger.error('Erro ao redirecionar para Cakto', redirectError);
             // Continuar com fluxo normal se redirecionamento falhar
           }
         }
@@ -815,12 +659,7 @@ export default function Checkout() {
         setLoading(true);
         
         try {
-          // Buscar pedido PRIMEIRO (mais importante para redirecionamento)
-          const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
+          const { data: orderData, error: orderError } = await fetchOrderById(orderId);
 
           if (orderError || !orderData) {
             logger.error('Erro ao buscar pedido', orderError);
@@ -906,7 +745,7 @@ export default function Checkout() {
             // Se auto=true, mesmo sem quiz, tentar redirecionar para Cakto usando dados do pedido
             // O quiz pode não ser encontrado por problemas de RLS, mas o pedido tem os dados necessários
             if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-              logger.warn('Quiz não encontrado, mas pedido tem dados. Tentando redirecionar para Hotmart mesmo assim...', {
+              logger.warn('Quiz não encontrado, mas pedido tem dados. Tentando redirecionar para Cakto mesmo assim...', {
                 orderId: orderData.id,
                 status: orderData.status,
                 email: orderData.customer_email,
@@ -915,13 +754,13 @@ export default function Checkout() {
               });
               
               // SEMPRE tentar redirecionar se auto=true e pedido tem dados, independente da rota
-              const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
               
               if (redirectSuccess) {
-                logger.debug('Redirecionamento para Hotmart iniciado com sucesso');
+                logger.debug('Redirecionamento para Cakto iniciado com sucesso');
                 return; // Não continuar o fluxo
               } else {
-                logger.error('Falha ao redirecionar para Hotmart');
+                logger.error('Falha ao redirecionar para Cakto');
                 // Continuar com restore normal abaixo
               }
             } else {
@@ -1021,20 +860,20 @@ export default function Checkout() {
               // Continuar com fluxo normal para preencher dados
               return; // Retornar para não tentar redirecionar
             } else {
-              // ✅ Tudo OK - redirecionar direto para Hotmart
+              // ✅ Tudo OK - redirecionar direto para Cakto
               // SEMPRE redirecionar se auto=true e pedido tem dados, independente da rota
-              logger.debug('Quiz encontrado e pedido válido, redirecionando para Hotmart...');
-              const redirectSuccess = await redirectToHotmart(
+              logger.debug('Quiz encontrado e pedido válido, redirecionando para Cakto...');
+              const redirectSuccess = await redirectToCakto(
                 orderData, 
                 utms, 
                 quizData.language || 'pt'
               );
               
               if (redirectSuccess) {
-                logger.debug('Redirecionamento para Hotmart iniciado com sucesso');
+                logger.debug('Redirecionamento para Cakto iniciado com sucesso');
                 return; // Não continuar o fluxo
               } else {
-                logger.error('Falha ao redirecionar para Hotmart, restaurando quiz...');
+                logger.error('Falha ao redirecionar para Cakto, restaurando quiz...');
                 // Restaurar quiz para mostrar formulário normal
                 const restoredQuiz: QuizData = {
                   id: quizData.id,
@@ -1070,31 +909,27 @@ export default function Checkout() {
         }
       }
       
-      // ✅ PRIORIDADE 0: Se restore=true, verificar se deve redirecionar para Hotmart primeiro
-      // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar para Hotmart ao invés de processar checkout interno
+      // ✅ PRIORIDADE 0: Se restore=true, verificar se deve redirecionar para Cakto primeiro
+      // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar para Cakto ao invés de processar checkout interno
       if (restore === 'true' && orderId && quizId) {
         const messageIdFromUrl = urlParams.get('message_id');
         // Se tem message_id, significa que veio do WhatsApp e deve ir direto para Cakto
         if (messageIdFromUrl && !window.location.href.includes('pay.cakto.com.br')) {
-          logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando para Hotmart...');
+          logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando para Cakto...');
           setLoading(true);
           
           try {
-            const { data: orderData } = await supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderId)
-              .single();
+            const { data: orderData } = await fetchOrderById(orderId);
             
             if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-              logger.debug('Pedido encontrado, redirecionando para Hotmart...');
-              const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+              logger.debug('Pedido encontrado, redirecionando para Cakto...');
+              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
               if (redirectSuccess) {
                 return; // Redirecionamento bem-sucedido, sair da função
               }
             }
           } catch (redirectError) {
-            logger.error('Erro ao redirecionar para Hotmart', redirectError);
+            logger.error('Erro ao redirecionar para Cakto', redirectError);
             // Continuar com fluxo normal se redirecionamento falhar
           }
         }
@@ -1183,11 +1018,7 @@ export default function Checkout() {
             quizError = error;
           }
 
-          const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
+          const { data: orderData, error: orderError } = await fetchOrderById(orderId);
 
           if (quizError || !quizData) {
             logger.error('Erro ao buscar quiz no restore', quizError, {
@@ -1199,21 +1030,21 @@ export default function Checkout() {
               hasQuizData: !!quizData
             });
             
-            // Se tem orderData mas não tem quiz, tentar redirecionar para Hotmart mesmo assim
+            // Se tem orderData mas não tem quiz, tentar redirecionar para Cakto mesmo assim
             // Se auto=true, SEMPRE tentar redirecionar independente da rota
             if (!orderError && orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-              logger.warn('Quiz não encontrado no restore, mas pedido tem dados. Tentando redirecionar para Hotmart...', { auto, orderId });
+              logger.warn('Quiz não encontrado no restore, mas pedido tem dados. Tentando redirecionar para Cakto...', { auto, orderId });
               
               // Se auto=true, sempre tentar redirecionar
               if (auto === 'true') {
-                logger.debug('auto=true detectado, redirecionando para Hotmart...');
-                const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+                logger.debug('auto=true detectado, redirecionando para Cakto...');
+                const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
                 
                 if (redirectSuccess) {
-                  logger.debug('Redirecionamento para Hotmart iniciado com sucesso');
+                  logger.debug('Redirecionamento para Cakto iniciado com sucesso');
                   return;
                 } else {
-                  logger.error('Falha ao redirecionar para Hotmart');
+                  logger.error('Falha ao redirecionar para Cakto');
                 }
               } else {
                 logger.debug('auto não é true, não redirecionando automaticamente');
@@ -1293,25 +1124,21 @@ export default function Checkout() {
         } catch (error) {
           logger.error('❌ [Checkout] Erro ao restaurar quiz:', error);
           
-          // Se auto=true, tentar redirecionar para Hotmart mesmo com erro
+          // Se auto=true, tentar redirecionar para Cakto mesmo com erro
           if (auto === 'true' && orderId) {
             logger.debug('⚠️ [Checkout] Erro no restore, mas auto=true. Tentando buscar pedido e redirecionar...');
             try {
-              const { data: orderData } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', orderId)
-                .single();
+              const { data: orderData } = await fetchOrderById(orderId);
               
               if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-                logger.debug('✅ [Checkout] Pedido encontrado no fallback, redirecionando para Hotmart...');
-                const redirectSuccess = await redirectToHotmart(orderData, utms, 'pt');
+                logger.debug('✅ [Checkout] Pedido encontrado no fallback, redirecionando para Cakto...');
+                const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
                 
                 if (redirectSuccess) {
                   logger.debug('✅ [Checkout] Redirecionamento para Cakto iniciado com sucesso após erro');
                   return;
                 } else {
-                  logger.error('❌ [Checkout] Falha ao redirecionar para Hotmart no fallback');
+                  logger.error('❌ [Checkout] Falha ao redirecionar para Cakto no fallback');
                 }
               } else {
                 logger.warn('⚠️ [Checkout] Pedido não tem dados necessários no fallback:', {
@@ -2022,19 +1849,15 @@ export default function Checkout() {
         return getOrCreateQuizSessionId();
       })();
       
-      const hotmartConfigForRedirect = getHotmartConfig();
-      const amountCentsForRedirect = hotmartConfigForRedirect.amount_cents;
+      const caktoConfigForRedirect = getCaktoConfig();
+      const amountCentsForRedirect = caktoConfigForRedirect.amount_cents;
       
       // ✅ OTIMIZAÇÃO ULTRA-RÁPIDA: Gerar URL do gateway ANTES de processar banco
       const paymentGatewayForRedirect = getPaymentGateway();
       let redirectUrl: string;
       
-      // Sempre usar Hotmart
-      const hotmartConfig = getHotmartConfig();
-      // Gerar URL da Hotmart com order_id temporário (será atualizado quando order for criado)
-      // ✅ CORREÇÃO: Usar allTrackingParams para incluir xcod
-      redirectUrl = generateHotmartUrl(
-        'pending', // Será atualizado quando order for criado
+      redirectUrl = generateCaktoUrl(
+        'pending',
         normalizedEmail,
         normalizedWhatsApp,
         currentLanguage,
@@ -2058,12 +1881,12 @@ export default function Checkout() {
       };
       
       // ✅ CORREÇÃO CRÍTICA: Criar pedido SINCRONAMENTE antes de redirecionar
-      // Isso garante que o pedido existe no banco antes do webhook da Hotmart chegar
+      // Isso garante que o pedido existe no banco antes do webhook da Cakto chegar
       logger.info('🔄 [Checkout] Criando pedido no banco antes de redirecionar...', {
         email: normalizedEmail,
         whatsapp: normalizedWhatsApp,
         plan: selectedPlan,
-        provider: 'hotmart'
+        provider: 'cakto'
       });
       
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -2075,7 +1898,7 @@ export default function Checkout() {
             customer_whatsapp: normalizedWhatsApp,
             plan: selectedPlan,
             amount_cents: amountCentsForRedirect,
-        provider: 'hotmart',
+        provider: 'cakto',
             transaction_id: transactionId
           };
           
@@ -2113,7 +1936,7 @@ export default function Checkout() {
               .single();
             
             if (updateError || !updatedQuiz) {
-              logger.warn('⚠️ [Checkout] Erro ao atualizar quiz existente (não crítico)', updateError);
+              logger.warn('⚠️ [Checkout] Erro ao atualizar quiz existente (não crítico)', { error: updateError });
             } else {
               quizData = updatedQuiz;
               logger.debug('✅ [Checkout] Quiz atualizado com email/whatsapp');
@@ -2192,7 +2015,7 @@ export default function Checkout() {
         
         // PASSO 3: Criar pedido diretamente (fluxo antigo - como era antes)
         logger.debug('📦 [Checkout] Criando pedido diretamente no banco...', {
-          provider: 'hotmart',
+          provider: 'cakto',
           email: normalizedEmail,
           quiz_id: quizData.id
         });
@@ -2203,8 +2026,8 @@ export default function Checkout() {
           plan: selectedPlan as 'standard' | 'express',
           amount_cents: amountCentsForRedirect,
           status: 'pending' as const,
-          provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
-          payment_provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
+          provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
+          payment_provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
           customer_email: normalizedEmail,
           customer_whatsapp: normalizedWhatsApp as string,
           transaction_id: transactionId || null
@@ -2215,14 +2038,14 @@ export default function Checkout() {
           email: normalizedEmail.substring(0, 10) + '...',
           plan: selectedPlan,
           amount_cents: amountCentsForRedirect,
-          provider: 'hotmart'
+          provider: 'cakto'
         });
         
-        const { data: orderData, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = (await supabase
           .from('orders')
           .insert(orderPayload)
           .select()
-          .single();
+          .single()) as CheckoutOrderResponse;
         
         if (orderError) {
           logger.error('❌ [Checkout] Erro ao criar pedido no banco', {
@@ -2275,7 +2098,7 @@ export default function Checkout() {
         logger.info('✅ [Checkout] Pedido criado com sucesso no banco!', {
           order_id: orderId,
           quiz_id: quizData.id,
-          provider: 'hotmart',
+          provider: 'cakto',
           status: orderData.status,
           customer_email: orderData.customer_email,
           customer_whatsapp: orderData.customer_whatsapp
@@ -2287,7 +2110,7 @@ export default function Checkout() {
         
         // Atualizar URL de redirecionamento com order_id real
         // ✅ CORREÇÃO: Usar allTrackingParams para incluir xcod
-        redirectUrl = generateHotmartUrl(
+        redirectUrl = generateCaktoUrl(
           orderId,
           normalizedEmail,
           normalizedWhatsApp,
@@ -2295,20 +2118,20 @@ export default function Checkout() {
           allTrackingParams
         );
         
-        // Salvar URL da Hotmart no pedido
+        // Salvar URL da Cakto no pedido
         try {
           const { error: updateError } = await supabase
             .from('orders')
-            .update({ hotmart_payment_url: redirectUrl })
+            .update({ cakto_payment_url: redirectUrl } as Database['public']['Tables']['orders']['Update'])
             .eq('id', orderId);
           
           if (updateError) {
-            logger.warn('⚠️ [Checkout] Erro ao salvar URL da Hotmart no pedido', updateError);
+            logger.warn('⚠️ [Checkout] Erro ao salvar URL da Cakto no pedido', { error: updateError });
           } else {
-            logger.debug('✅ [Checkout] URL da Hotmart salva no pedido');
+            logger.debug('✅ [Checkout] URL da Cakto salva no pedido');
           }
         } catch (updateErr) {
-          logger.warn('⚠️ [Checkout] Erro ao atualizar pedido com URL', updateErr);
+          logger.warn('⚠️ [Checkout] Erro ao atualizar pedido com URL', { error: updateErr });
         }
       } catch (createError: any) {
         logger.error('❌ [Checkout] Erro ao criar pedido (catch final)', {
@@ -2351,7 +2174,7 @@ export default function Checkout() {
       const hasUtmsInFinalUrl = Object.keys(utmsInFinalUrl).length > 0;
       
       // Log SEMPRE para diagnóstico
-      console.log('🚀 [Checkout] REDIRECIONAMENTO FINAL para Hotmart:', {
+      console.log('🚀 [Checkout] REDIRECIONAMENTO FINAL para Cakto:', {
         hasUtmsInFinalUrl,
         utmsInFinalUrl,
         utmsDisponivel: Object.keys(utms).length,
@@ -2365,7 +2188,7 @@ export default function Checkout() {
         });
       }
       
-      logger.info('🚀 [Checkout] Redirecionando para Hotmart...', {
+      logger.info('🚀 [Checkout] Redirecionando para Cakto...', {
         url: redirectUrl.substring(0, 100),
         order_created: orderCreated,
         order_id: orderId,
@@ -2393,7 +2216,7 @@ export default function Checkout() {
               order_id: 'unknown',
               plan: selectedPlan,
               error_message: actualErrorMessage,
-              payment_provider: 'hotmart', // Sempre usar Hotmart como método de pagamento
+              payment_provider: 'cakto',
             }).catch(() => {});
           }
         } catch (error) {

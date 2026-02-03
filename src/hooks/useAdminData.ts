@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, queryClient } from '@/lib/queryClient';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseReady } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendReleaseWebhook } from '@/utils/webhook';
 
@@ -190,6 +190,24 @@ export function useDashboardStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.dashboard.stats(),
     queryFn: async () => {
+      const isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+      if (!isSupabaseReady() || !isOnline) {
+        const cachedData = queryClient.getQueryData(queryKeys.dashboard.stats());
+        if (cachedData && typeof cachedData === 'object') {
+          return cachedData as any;
+        }
+        return {
+          totalOrders: 0,
+          paidOrders: 0,
+          stripeOrders: 0,
+          caktoOrders: 0,
+          stripeRevenue: 0,
+          caktoRevenue: 0,
+          totalRevenueBRL: 0,
+          totalRevenueUSD: 0,
+          totalRevenueBRLConverted: 0,
+        };
+      }
       // ✅ CORREÇÃO: Para mais de 1 milhão de registros, usar RPC ou contar via paginação
       // Tentar primeiro com count exact, se falhar, usar paginação
       
@@ -1651,7 +1669,7 @@ export function useReleases() {
           : Promise.resolve({ data: [], error: null })
       ]);
       
-      const emailLogs = emailLogsResult;
+      const emailLogs = emailLogsResult as any;
       
       
       const ordersMap = new Map(ordersData.data?.map(o => [o.id, o]) || []);
@@ -1670,9 +1688,9 @@ export function useReleases() {
       // Para cada order_id, pegar apenas as 2 músicas do job mais recente
       // Músicas do mesmo job são criadas quase simultaneamente (mesma requisição Suno)
       
-      // Agrupar músicas por order_id
+      // ✅ CORREÇÃO: Agrupar músicas por order_id
       const groupedByOrder = new Map<string, any[]>();
-      songsWithAudio.forEach((song: any) => {
+      songsWithAudio.forEach((song) => {
         if (!groupedByOrder.has(song.order_id)) {
           groupedByOrder.set(song.order_id, []);
         }

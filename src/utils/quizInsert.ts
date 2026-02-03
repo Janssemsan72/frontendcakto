@@ -168,7 +168,7 @@ async function performInsert(
 
         // ✅ UPSERT: Usar upsert se tiver session_id para garantir idempotência
         // ✅ CORREÇÃO: Verificar se quiz já está associado a pedido antes de fazer UPSERT
-        let query = supabase.from('quizzes');
+        let mutationQuery = supabase.from('quizzes').insert(quizPayload);
         
         if (quizPayload.session_id) {
           // Verificar se já existe quiz com este session_id e se está associado a um pedido
@@ -191,27 +191,27 @@ async function performInsert(
               // ✅ CORREÇÃO: Não usar session_id para novo quiz (evitar conflito de constraint unique)
               console.log(`[QuizInsert] Quiz com session_id ${quizPayload.session_id} já está associado a pedido ${existingOrder.id}, criando novo quiz sem session_id`);
               const newQuizPayload = { ...quizPayload, session_id: undefined };
-              query = query.insert(newQuizPayload);
+              mutationQuery = supabase.from('quizzes').insert(newQuizPayload);
             } else {
               // Quiz existe mas não está associado a pedido - pode atualizar
-              query = query.upsert(quizPayload, {
+              mutationQuery = supabase.from('quizzes').upsert(quizPayload, {
                 onConflict: 'session_id',
                 ignoreDuplicates: false // Atualiza se já existe
               });
             }
           } else {
             // Quiz não existe - pode fazer upsert normalmente
-            query = query.upsert(quizPayload, {
+            mutationQuery = supabase.from('quizzes').upsert(quizPayload, {
               onConflict: 'session_id',
               ignoreDuplicates: false // Atualiza se já existe
             });
           }
         } else {
           // Fallback para insert se não tiver session_id
-          query = query.insert(quizPayload);
+          mutationQuery = supabase.from('quizzes').insert(quizPayload);
         }
         
-        const { data, error } = await query
+        const { data, error } = await mutationQuery
           .select()
           .single();
 

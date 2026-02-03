@@ -19,61 +19,71 @@ export interface Database {
       quizzes: {
         Row: {
           id: string;
-          session_id: string;
+          session_id: string | null;
+          user_id: string | null;
+          customer_email: string | null;
+          customer_whatsapp: string | null;
           about_who: string;
+          relationship: string | null;
           style: string;
-          desired_tone: string | null;
-          music_prompt: string | null;
-          vocal_gender: string | null;
-          customer_name: string | null;
-          extra_info: string | null;
           language: string | null;
-          relation: string | null;
+          vocal_gender: string | null;
+          qualities: Json | null;
+          memories: Json | null;
+          message: string | null;
+          key_moments: Json | null;
           occasion: string | null;
-          memories: string | null;
-          qualities: string | null;
-          emotions: string | null;
+          desired_tone: string | null;
+          answers: Json | null;
+          transaction_id: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          session_id: string;
+          session_id?: string | null;
+          user_id?: string | null;
+          customer_email?: string | null;
+          customer_whatsapp?: string | null;
           about_who: string;
+          relationship?: string | null;
           style: string;
-          desired_tone?: string | null;
-          music_prompt?: string | null;
-          vocal_gender?: string | null;
-          customer_name?: string | null;
-          extra_info?: string | null;
           language?: string | null;
-          relation?: string | null;
+          vocal_gender?: string | null;
+          qualities?: Json | null;
+          memories?: Json | null;
+          message?: string | null;
+          key_moments?: Json | null;
           occasion?: string | null;
-          memories?: string | null;
-          qualities?: string | null;
-          emotions?: string | null;
+          desired_tone?: string | null;
+          answers?: Json | null;
+          transaction_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          session_id?: string;
+          session_id?: string | null;
+          user_id?: string | null;
+          customer_email?: string | null;
+          customer_whatsapp?: string | null;
           about_who?: string;
+          relationship?: string | null;
           style?: string;
-          desired_tone?: string | null;
-          music_prompt?: string | null;
-          vocal_gender?: string | null;
-          customer_name?: string | null;
-          extra_info?: string | null;
           language?: string | null;
-          relation?: string | null;
+          vocal_gender?: string | null;
+          qualities?: Json | null;
+          memories?: Json | null;
+          message?: string | null;
+          key_moments?: Json | null;
           occasion?: string | null;
-          memories?: string | null;
-          qualities?: string | null;
-          emotions?: string | null;
+          desired_tone?: string | null;
+          answers?: Json | null;
+          transaction_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       orders: {
         Row: {
@@ -85,6 +95,13 @@ export interface Database {
           amount_cents: number;
           status: string;
           provider: string;
+          payment_provider: string | null;
+          cakto_payment_url: string | null;
+          cakto_payment_status: string | null;
+          stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
+          provider_ref: string | null;
+          is_test_order: boolean | null;
           transaction_id: string | null;
           magic_token: string;
           user_id: string | null;
@@ -101,6 +118,13 @@ export interface Database {
           amount_cents: number;
           status?: string;
           provider: string;
+          payment_provider?: string | null;
+          cakto_payment_url?: string | null;
+          cakto_payment_status?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          provider_ref?: string | null;
+          is_test_order?: boolean | null;
           transaction_id?: string | null;
           magic_token?: string;
           user_id?: string | null;
@@ -117,6 +141,13 @@ export interface Database {
           amount_cents?: number;
           status?: string;
           provider?: string;
+          payment_provider?: string | null;
+          cakto_payment_url?: string | null;
+          cakto_payment_status?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          provider_ref?: string | null;
+          is_test_order?: boolean | null;
           transaction_id?: string | null;
           magic_token?: string;
           user_id?: string | null;
@@ -124,11 +155,13 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       songs: {
         Row: {
           id: string;
           order_id: string;
+          quiz_id: string | null;
           title: string;
           variant_number: number;
           cover_url: string | null;
@@ -139,6 +172,7 @@ export interface Database {
           status: string;
           style: string | null;
           release_at: string | null;
+          released_at: string | null;
           email_sent: boolean;
           stems_separated_at: string | null;
           created_at: string;
@@ -165,6 +199,7 @@ export interface Database {
         Update: {
           id?: string;
           order_id?: string;
+          quiz_id?: string | null;
           title?: string;
           variant_number?: number;
           cover_url?: string | null;
@@ -180,6 +215,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       lyrics_approvals: {
         Row: {
@@ -233,6 +269,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       email_logs: {
         Row: {
@@ -268,6 +305,7 @@ export interface Database {
           sent_at?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       email_templates: {
         Row: {
@@ -300,6 +338,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       testimonials: {
         Row: {
@@ -335,6 +374,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       faqs: {
         Row: {
@@ -367,6 +407,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       regional_pricing: {
         Row: {
@@ -399,6 +440,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       social_proof_messages: {
         Row: {
@@ -422,6 +464,7 @@ export interface Database {
           is_active?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
       admin_users: {
         Row: {
@@ -451,6 +494,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       collaborators: {
         Row: {
@@ -483,6 +527,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       affiliates: {
         Row: {
@@ -518,6 +563,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       checkout_logs: {
         Row: {
@@ -541,6 +587,97 @@ export interface Database {
           event_data?: Json;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      checkout_events: {
+        Row: {
+          id: string;
+          transaction_id: string;
+          order_id: string | null;
+          event_type: string;
+          payload: Json;
+          error: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          transaction_id: string;
+          order_id?: string | null;
+          event_type: string;
+          payload?: Json;
+          error?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          transaction_id?: string;
+          order_id?: string | null;
+          event_type?: string;
+          payload?: Json;
+          error?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_logs: {
+        Row: {
+          id: string;
+          admin_user_id: string | null;
+          action: string;
+          target_table: string;
+          target_id: string | null;
+          changes: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id?: string | null;
+          action: string;
+          target_table: string;
+          target_id?: string | null;
+          changes?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          admin_user_id?: string | null;
+          action?: string;
+          target_table?: string;
+          target_id?: string | null;
+          changes?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      checkout_links: {
+        Row: {
+          id: string;
+          order_id: string;
+          quiz_id: string;
+          token: string;
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          quiz_id: string;
+          token: string;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          quiz_id?: string;
+          token?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       behavior_events: {
         Row: {
@@ -570,6 +707,7 @@ export interface Database {
           metadata?: Json;
           created_at?: string;
         };
+        Relationships: [];
       };
       app_logs: {
         Row: {
@@ -593,13 +731,115 @@ export interface Database {
           context?: Json;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      user_roles: {
+        Row: { id?: string; user_id: string; role: string };
+        Insert: { id?: string; user_id: string; role?: string };
+        Update: { id?: string; user_id?: string; role?: string };
+        Relationships: [];
+      };
+      collaborator_permissions: {
+        Row: { id?: string; user_id: string; permission_key: string; granted: boolean };
+        Insert: { id?: string; user_id: string; permission_key?: string; granted?: boolean };
+        Update: { id?: string; user_id?: string; permission_key?: string; granted?: boolean };
+        Relationships: [];
+      };
+      example_tracks: {
+        Row: { id?: string; title: string; artist: string; audio_path: string; cover_path: string; language?: string; is_active?: boolean };
+        Insert: { id?: string; title?: string; artist?: string; audio_path?: string; cover_path?: string; language?: string; is_active?: boolean };
+        Update: { id?: string; title?: string; artist?: string; audio_path?: string; cover_path?: string; language?: string; is_active?: boolean };
+        Relationships: [];
+      };
+      quiz_retry_queue: {
+        Row: {
+          id: string;
+          session_id: string | null;
+          quiz_payload: Json;
+          attempts: number;
+          max_attempts: number;
+          last_error: string | null;
+          status: string;
+          next_retry_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id?: string | null;
+          quiz_payload: Json;
+          attempts?: number;
+          max_attempts?: number;
+          last_error?: string | null;
+          status?: string;
+          next_retry_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string | null;
+          quiz_payload?: Json;
+          attempts?: number;
+          max_attempts?: number;
+          last_error?: string | null;
+          status?: string;
+          next_retry_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      jobs: {
+        Row: {
+          id: string;
+          order_id: string;
+          suno_task_id: string | null;
+          suno_audio_url: string | null;
+          status: string;
+          error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          suno_task_id?: string | null;
+          suno_audio_url?: string | null;
+          status?: string;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          suno_task_id?: string | null;
+          suno_audio_url?: string | null;
+          status?: string;
+          error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      /** Permite tabelas não declaradas - evita erros de tipo 'never' em tabelas dinâmicas */
+      [key: string]: {
+        Row: Record<string, unknown>;
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+        Relationships: [];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      count_lyrics_approvals_by_status: {
+        Args: { p_status: string; p_include_expired: boolean };
+        Returns: number;
+      };
+      get_quiz_by_id: {
+        Args: { quiz_id_param: string };
+        Returns: Database['public']['Tables']['quizzes']['Row'][];
+      };
     };
     Enums: {
       [_ in never]: never;

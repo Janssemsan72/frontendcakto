@@ -97,7 +97,7 @@ export function EnhancedTabsList({ children, className }: EnhancedTabsListProps)
     default: "h-10 rounded-md bg-muted p-1 text-muted-foreground",
     pills: "h-10 rounded-full bg-muted p-1 text-muted-foreground",
     underline: "h-10 border-b border-border bg-transparent p-0 text-muted-foreground",
-    modern: "h-14 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-1.5 text-amber-800 border border-amber-200 shadow-sm"
+    modern: "min-h-14 rounded-lg p-1.5 text-amber-900 border border-amber-200/60 shadow-sm"
   };
   
   const sizeClasses = {
@@ -130,7 +130,7 @@ export function EnhancedTabsTrigger({
   
   const isActive = currentValue === value;
   
-  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  const baseClasses = "inline-flex items-center justify-center rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
   
   const variantClasses = {
     default: cn(
@@ -146,10 +146,10 @@ export function EnhancedTabsTrigger({
       isActive && "border-primary text-primary"
     ),
     modern: cn(
-      "px-8 py-3 rounded-md transition-all duration-200 flex items-center gap-2 font-semibold text-base",
+      "px-3 md:px-6 py-2 md:py-3 rounded-md transition-all duration-200 flex items-center gap-2 font-semibold text-sm md:text-base min-w-0 flex-1",
       isActive 
         ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg transform scale-105" 
-        : "hover:bg-amber-100 hover:text-amber-900 hover:shadow-md"
+        : "bg-transparent hover:bg-amber-100/30 hover:text-amber-900 hover:shadow-md text-amber-900"
     )
   };
   
@@ -173,7 +173,7 @@ export function EnhancedTabsTrigger({
       aria-selected={isActive}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
-      <span className="truncate">{children}</span>
+      <span className="whitespace-normal break-words">{children}</span>
       {badge && <span className="ml-1 flex-shrink-0">{badge}</span>}
     </button>
   );

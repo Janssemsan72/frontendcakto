@@ -440,7 +440,7 @@ export default function AdminOrders() {
       )}
 
       <Card className="admin-card-compact border-2 hover:shadow-lg transition-shadow">
-        <CardHeader className="p-1 md:p-2">
+        <CardHeader className="p-2 md:p-3">
           <CardTitle className="text-[10px] md:text-xs font-medium">Pedidos</CardTitle>
           <div 
             className="flex flex-col md:flex-row gap-2 md:gap-3 mt-3 md:mt-4"
@@ -451,7 +451,7 @@ export default function AdminOrders() {
               }
             }}
           >
-            <div className="relative flex-1">
+            <div className="relative flex-[8] sm:min-w-[500px] md:min-w-[700px] lg:min-w-[900px] xl:min-w-[1100px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground pointer-events-none z-10" />
             <Input
               data-testid="search-input"
@@ -464,12 +464,12 @@ export default function AdminOrders() {
                     e.stopPropagation();
                   }
                 }}
-              className="text-sm"
+              className="text-sm w-full !h-14 !text-base"
               style={{ paddingLeft: '2.75rem' }}
             />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger data-testid="filter-status" className="w-full md:w-[140px] text-xs">
+              <SelectTrigger data-testid="filter-status" className="w-full md:w-[100px] text-xs">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -481,7 +481,7 @@ export default function AdminOrders() {
               </SelectContent>
             </Select>
             <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger data-testid="filter-plan" className="w-full md:w-[140px] text-xs">
+              <SelectTrigger data-testid="filter-plan" className="w-full md:w-[100px] text-xs">
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
               <SelectContent>
@@ -491,7 +491,7 @@ export default function AdminOrders() {
               </SelectContent>
             </Select>
             <Select value={providerFilter} onValueChange={setProviderFilter}>
-              <SelectTrigger data-testid="filter-provider" className="w-full md:w-[140px] text-xs">
+              <SelectTrigger data-testid="filter-provider" className="w-full md:w-[100px] text-xs">
                 <SelectValue placeholder="Gateway" />
               </SelectTrigger>
               <SelectContent>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { EnhancedTabs, EnhancedTabsContent, EnhancedTabsList, EnhancedTabsTrigger } from "@/components/ui/enhanced-tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, RefreshCw, Search, Loader2, RotateCcw, Play } from "@/utils/iconImports";
+import { CheckCircle, XCircle, Clock, RefreshCw, Search, Loader2, RotateCcw, Play, ChevronLeft, ChevronRight } from "@/utils/iconImports";
 import { useLyricsApprovals } from "@/hooks/useLyricsApprovals";
 import { LyricsCard } from "@/components/admin/LyricsCard";
 import { RegenerateAllProgressDialog } from "@/components/admin/RegenerateAllProgressDialog";
@@ -21,13 +21,16 @@ export default function AdminLyrics() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // ✅ OTIMIZAÇÃO: Debounce para reduzir filtros
   const [showProgressDialog, setShowProgressDialog] = useState(false);
 
+  // ✅ PAGINAÇÃO: 50 itens por página para suportar 60k+ registros
+  const ITEMS_PER_PAGE = 50;
+  const [pendingPage, setPendingPage] = useState(1);
+  const [approvedPage, setApprovedPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
+
   // ✅ CORREÇÃO: Usar useMemo para evitar recriação de arrays a cada render
   const pendingStatus = useMemo(() => ['pending'] as LyricsStatus[], []);
   const approvedStatus = useMemo(() => ['approved'] as LyricsStatus[], []);
   const rejectedStatus = useMemo(() => ['rejected'] as LyricsStatus[], []);
-
-  // ✅ CORREÇÃO: Carregar todas as letras (sem paginação)
-  // Removidos estados de paginação pois vamos carregar tudo de uma vez
 
   // ✅ PRIORIDADE: Estado para controlar qual tab está ativa (pendentes carregam primeiro)
   const [activeTab, setActiveTab] = useState<string>("pending");
@@ -55,7 +58,8 @@ export default function AdminLyrics() {
   } = useLyricsApprovals({ 
     status: pendingStatus, 
     includeExpired: true,
-    // ✅ CORREÇÃO: Sem limite = carregar todas as letras
+    limit: ITEMS_PER_PAGE,
+    offset: (pendingPage - 1) * ITEMS_PER_PAGE,
     enabled: true // ✅ Pendentes sempre carregam primeiro
   });
 
@@ -86,7 +90,8 @@ export default function AdminLyrics() {
   } = useLyricsApprovals({ 
     status: approvedStatus, 
     includeExpired: true,
-    // ✅ CORREÇÃO: Sem limite = carregar todas as letras
+    limit: ITEMS_PER_PAGE,
+    offset: (approvedPage - 1) * ITEMS_PER_PAGE,
     enabled: activeTab === "approved" // ✅ Só carregar dados quando tab estiver ativa
   });
 
@@ -102,7 +107,8 @@ export default function AdminLyrics() {
   } = useLyricsApprovals({ 
     status: rejectedStatus, 
     includeExpired: true,
-    // ✅ CORREÇÃO: Sem limite = carregar todas as letras
+    limit: ITEMS_PER_PAGE,
+    offset: (rejectedPage - 1) * ITEMS_PER_PAGE,
     enabled: activeTab === "rejected" // ✅ Só carregar dados quando tab estiver ativa
   });
 
@@ -615,43 +621,41 @@ export default function AdminLyrics() {
         size="lg" 
         className="space-y-4 md:space-y-6"
         onValueChange={(value) => {
-          // ✅ PRIORIDADE: Atualizar tab ativa para carregar dados apenas quando necessário
           setActiveTab(value);
-          // ✅ CORREÇÃO: Estados de paginação foram removidos (carrega tudo de uma vez)
-          // Manter apenas o controle de tab ativa.
+          // Resetar página ao trocar de tab
+          setPendingPage(1);
+          setApprovedPage(1);
+          setRejectedPage(1);
         }}
       >
-        <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-start md:items-center">
-          <EnhancedTabsList className="enhanced-tabs-modern grid w-full grid-cols-3 flex-1 md:max-w-none">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-stretch md:items-center">
+          <EnhancedTabsList className="enhanced-tabs-modern enhanced-tabs-lyrics flex flex-row w-full gap-1 md:gap-2 flex-1">
             <EnhancedTabsTrigger 
               value="pending" 
-              icon={<Clock className="h-5 w-5 md:h-6 md:w-6" />}
+              icon={<Clock className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />}
               badge={pendingTotalCount !== null && pendingTotalCount !== undefined && pendingTotalCount > 0 ? (
                 <span className="enhanced-tabs-badge">{pendingTotalCount}</span>
               ) : undefined}
             >
-              <span className="hidden sm:inline">Pendentes</span>
-              <span className="sm:hidden">Pend.</span>
+              Pendentes
             </EnhancedTabsTrigger>
             <EnhancedTabsTrigger 
               value="approved" 
-              icon={<CheckCircle className="h-5 w-5 md:h-6 md:w-6" />}
+              icon={<CheckCircle className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />}
               badge={approvedTotalCount && approvedTotalCount > 0 ? (
                 <span className="enhanced-tabs-badge">{approvedTotalCount}</span>
               ) : undefined}
             >
-              <span className="hidden sm:inline">Aprovadas</span>
-              <span className="sm:hidden">Aprov.</span>
+              Aprovadas
             </EnhancedTabsTrigger>
             <EnhancedTabsTrigger 
               value="rejected" 
-              icon={<XCircle className="h-5 w-5 md:h-6 md:w-6" />}
+              icon={<XCircle className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />}
               badge={rejectedTotalCount && rejectedTotalCount > 0 ? (
                 <span className="enhanced-tabs-badge">{rejectedTotalCount}</span>
               ) : undefined}
             >
-              <span className="hidden sm:inline">Rejeitadas</span>
-              <span className="sm:hidden">Rej.</span>
+              Rejeitadas
             </EnhancedTabsTrigger>
           </EnhancedTabsList>
 
@@ -678,17 +682,42 @@ export default function AdminLyrics() {
             </div>
           ) : visiblePending.length > 0 ? (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <h2 className="text-xl font-semibold">Letras Pendentes</h2>
-                {pendingTotalCount !== null && pendingTotalCount !== undefined ? (
-                  <span className="text-base text-primary font-medium">
-                    {pendingTotalCount} {pendingTotalCount === 1 ? 'item' : 'itens'}
-                  </span>
-                ) : (
-                  <span className="text-base text-muted-foreground">Calculando...</span>
-                )}
+                <div className="flex items-center gap-3">
+                  {pendingTotalCount !== null && pendingTotalCount !== undefined ? (
+                    <span className="text-base text-primary font-medium">
+                      {pendingTotalCount} {pendingTotalCount === 1 ? 'item' : 'itens'}
+                    </span>
+                  ) : (
+                    <span className="text-base text-muted-foreground">Calculando...</span>
+                  )}
+                  {!isEmailSearch && (pendingTotalCount ?? 0) > ITEMS_PER_PAGE && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPendingPage(p => Math.max(1, p - 1))}
+                        disabled={pendingPage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Página {pendingPage} de {Math.max(1, Math.ceil((pendingTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPendingPage(p => p + 1)}
+                        disabled={pendingPage >= Math.max(1, Math.ceil((pendingTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 auto-rows-fr">
+              <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 auto-rows-fr [&>*]:min-h-[280px]">
                 {visiblePending.map((approval) => {
                   const state = getApprovalState(approval.id, 'pending');
                   return (
@@ -731,13 +760,38 @@ export default function AdminLyrics() {
             </div>
           ) : visibleApproved.length > 0 ? (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <h2 className="text-xl font-semibold">Letras Aprovadas</h2>
-                <span className="text-base text-primary font-medium">
-                  {approvedTotalCount} {approvedTotalCount === 1 ? 'item' : 'itens'}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-base text-primary font-medium">
+                    {approvedTotalCount} {approvedTotalCount === 1 ? 'item' : 'itens'}
+                  </span>
+                  {!isEmailSearch && (approvedTotalCount ?? 0) > ITEMS_PER_PAGE && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage(p => Math.max(1, p - 1))}
+                        disabled={approvedPage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Página {approvedPage} de {Math.max(1, Math.ceil((approvedTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage(p => p + 1)}
+                        disabled={approvedPage >= Math.max(1, Math.ceil((approvedTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 auto-rows-fr">
+              <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 auto-rows-fr [&>*]:min-h-[280px]">
                 {visibleApproved.map((approval) => {
                   const state = getApprovalState(approval.id, 'approved');
                   return (
@@ -782,13 +836,38 @@ export default function AdminLyrics() {
             </div>
           ) : visibleRejected.length > 0 ? (
             <>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <h2 className="text-xl font-semibold">Letras Rejeitadas</h2>
-                <span className="text-base text-primary font-medium">
-                  {rejectedTotalCount} {rejectedTotalCount === 1 ? 'item' : 'itens'}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-base text-primary font-medium">
+                    {rejectedTotalCount} {rejectedTotalCount === 1 ? 'item' : 'itens'}
+                  </span>
+                  {!isEmailSearch && (rejectedTotalCount ?? 0) > ITEMS_PER_PAGE && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRejectedPage(p => Math.max(1, p - 1))}
+                        disabled={rejectedPage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Página {rejectedPage} de {Math.max(1, Math.ceil((rejectedTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRejectedPage(p => p + 1)}
+                        disabled={rejectedPage >= Math.max(1, Math.ceil((rejectedTotalCount ?? 0) / ITEMS_PER_PAGE))}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2 auto-rows-fr">
+              <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 auto-rows-fr [&>*]:min-h-[280px]">
                 {visibleRejected.map((approval) => {
                   const state = getApprovalState(approval.id, 'rejected');
                   return (

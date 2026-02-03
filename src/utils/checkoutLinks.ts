@@ -183,7 +183,7 @@ export async function ensureCheckoutLinks(orderId: string): Promise<{
           token: checkoutToken,
           expires_at: expiresAt.toISOString(),
         })
-        .select('id, token')
+        .select('id, token, expires_at')
         .single();
       
       if (linkError || !newLink) {

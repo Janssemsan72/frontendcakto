@@ -138,29 +138,27 @@
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
 
-    <!-- ✅ UTMify/Facebook Pixel: carregado após LCP para não bloquear main-thread -->
+    <!-- ✅ UTMify/Facebook Pixel: não carregar em /admin (evita erro _id undefined no pixel.js) -->
     <script>
       window.pixelId = "68f98a3f196fbe7f0e5683c7";
-      function loadUtmifyPixel() {
+      (function() {
+        var path = (window.location.pathname || '');
+        var hostname = (window.location.hostname || '').toLowerCase();
+        if (path.indexOf('/admin') === 0 || path.indexOf('/app/admin') === 0) return;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') return;
         var a = document.createElement("script");
-        a.src = "https://cdn.utmify.com.br/scripts/pixel/pixel.js";
         a.async = true;
-        document.head.appendChild(a);
-      }
-      if ("requestIdleCallback" in window) {
-        requestIdleCallback(loadUtmifyPixel, { timeout: 4000 });
-      } else {
-        window.addEventListener("load", function() { setTimeout(loadUtmifyPixel, 2000); });
-      }
+        a.src = "https://cdn.utmify.com.br/scripts/pixel/pixel.js";
+        a.onerror = function() { try { console.warn('[Pixel] Erro ao carregar'); } catch(e) {} };
+        (document.head || document.documentElement).appendChild(a);
+        var b = document.createElement("script");
+        b.async = true;
+        b.defer = true;
+        b.src = "https://cdn.utmify.com.br/scripts/utms/latest.js";
+        b.setAttribute("data-utmify-prevent-subids", "");
+        (document.head || document.documentElement).appendChild(b);
+      })();
     </script>
-
-    <!-- ✅ Script UTMify UTMs (formato estático para garantir tracking) -->
-    <script
-      src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-      data-utmify-prevent-subids
-      async
-      defer
-    ></script>
     
     <!-- ✅ Logo no header: preload para aparecer instantaneamente -->
     <link rel="preload" as="image" href="/images/logo-white.png" fetchpriority="high" />
