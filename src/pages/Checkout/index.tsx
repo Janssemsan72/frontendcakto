@@ -593,6 +593,57 @@ export default function Checkout() {
           setShouldRedirect(false);
           setLoading(false);
           logger.debug('Quiz carregado do localStorage');
+
+          // ✅ PERSISTÊNCIA ANTECIPADA: Salvar quiz no banco ao entrar no Checkout para não perder dados
+          // (Antes o quiz só era gravado ao clicar em Pagar; se o usuário fechasse a aba, o quiz "sumia")
+          if (!quizData.id) {
+            const sessionId = getOrCreateQuizSessionId();
+            const forValidation: ValidationQuizData = {
+              about_who: quizData.about_who || '',
+              relationship: quizData.relationship,
+              style: quizData.style || '',
+              language: quizData.language || 'pt',
+              vocal_gender: quizData.vocal_gender ?? null,
+              qualities: quizData.qualities,
+              memories: quizData.memories,
+              message: quizData.message,
+            };
+            const validation = validateQuiz(forValidation, { strict: false });
+            const sanitized = validation.valid ? sanitizeQuiz(forValidation) : forValidation;
+            const earlyPayload: QuizPayload = {
+              user_id: null,
+              customer_email: quizData.answers?.customer_email ?? quizData.customer_email ?? null,
+              customer_whatsapp: quizData.answers?.customer_whatsapp ?? quizData.customer_whatsapp ?? quizData.whatsapp ?? null,
+              about_who: sanitized.about_who,
+              relationship: sanitized.relationship,
+              style: sanitized.style,
+              language: quizData.language || 'pt',
+              vocal_gender: sanitized.vocal_gender ?? null,
+              qualities: quizData.qualities,
+              memories: quizData.memories,
+              message: quizData.message,
+              key_moments: quizData.key_moments,
+              occasion: quizData.occasion ?? null,
+              desired_tone: quizData.desired_tone ?? null,
+              answers: { ...quizData.answers, session_id: sessionId },
+              session_id: sessionId,
+            };
+            void (async () => {
+              try {
+                const res = await insertQuizWithRetry(earlyPayload);
+                if (res.success && res.data?.id) {
+                  logger.debug('✅ [Checkout] Quiz persistido antecipadamente no banco', { quiz_id: res.data.id });
+                  setQuiz((prev) => (prev ? { ...prev, id: res.data?.id, session_id: sessionId } : prev));
+                } else {
+                  const queued = await enqueueQuizToServer(earlyPayload, res.error);
+                  if (queued) logger.debug('✅ [Checkout] Quiz enfileirado para retry (persistência antecipada)');
+                }
+              } catch (e) {
+                logger.warn('⚠️ [Checkout] Erro na persistência antecipada do quiz', e);
+                await enqueueQuizToServer(earlyPayload, e);
+              }
+            })();
+          }
           
           // Rastrear visualização do checkout (silencioso)
           try {
@@ -2061,21 +2112,8 @@ export default function Checkout() {
           // Mostrar erro ao usuário
           toast.error(`Erro ao criar pedido: ${orderError.message || 'Erro desconhecido'}`);
           
-          // Tentar limpar quiz órfão se order falhar
-          try {
-            const { error: deleteError } = await supabase
-              .from('quizzes')
-              .delete()
-              .eq('id', quizData.id);
-            
-            if (deleteError) {
-              logger.error('❌ [Checkout] Erro ao fazer rollback do quiz', deleteError, { step: 'rollback_quiz' });
-            } else {
-              logger.info('✅ [Checkout] Quiz órfão removido após falha na criação do pedido');
-        }
-          } catch (rollbackError) {
-            logger.error('❌ [Checkout] Erro ao executar rollback', rollbackError);
-          }
+          // Política: não deletar quiz. O quiz permanece no banco mesmo se o pedido falhar.
+          logger.info('⚠️ [Checkout] Pedido falhou; quiz preservado (sem rollback delete)', { quiz_id: quizData.id });
           
           // ✅ BLOQUEAR redirecionamento se pedido não foi criado
           setProcessing(false);
