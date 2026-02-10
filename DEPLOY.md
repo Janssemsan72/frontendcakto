@@ -52,6 +52,10 @@ Após o push, verifique:
 - ✅ Não há arquivos sensíveis (`.env`, `node_modules`, etc.)
 - ✅ O build funciona corretamente
 
+## 📥 Fila de quiz (quiz_retry_queue)
+
+A fila de quizzes que falharam por rede é processada **quando alguém abre o site**: uma vez por sessão o app chama a Edge Function `process-quiz-retry-queue`. Não é usado cron nem CRON_SECRET.
+
 ## ⚠️ Checklist Antes do Deploy
 
 Antes de fazer o push, certifique-se de:

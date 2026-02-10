@@ -45,6 +45,7 @@ const AdminRouteFallback = () => (
 // ✅ CORREÇÃO: Importar QueryClient diretamente para garantir disponibilidade
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { supabase } from "@/integrations/supabase/client";
 
 const App = () => {
   return (
@@ -83,6 +84,16 @@ const AppContent = () => {
       navigate('/admin', { replace: true });
     }
   }, [isAdminRoute, location.pathname, navigate]);
+
+  // Processar fila quiz_retry_queue uma vez por sessão (quem abre o site ajuda a não perder quizzes)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (sessionStorage.getItem('quiz_queue_processed') === '1') return;
+      sessionStorage.setItem('quiz_queue_processed', '1');
+      supabase.functions.invoke('process-quiz-retry-queue', { method: 'POST' }).catch(() => {});
+    } catch (_) {}
+  }, []);
 
   useEffect(() => {
     if (!isAdminRoute) return;

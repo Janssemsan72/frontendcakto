@@ -443,6 +443,10 @@ export default function Checkout() {
   const [retryCount, setRetryCount] = useState(0);
   const [shouldRedirect, setShouldRedirect] = useState(false); // ✅ Adicionar estado que estava faltando
   const [lastClickTime, setLastClickTime] = useState(0);
+  const [quizPersistFailed, setQuizPersistFailed] = useState(false);
+  const earlyFailedPayloadRef = useRef<QuizPayload | null>(null);
+  const earlyOrderIdRef = useRef<string | null>(null);
+  const earlyOrderQuizIdRef = useRef<string | null>(null);
 
   // ⚠️ NOTA: Scripts UTMify são carregados globalmente no index.html
   // Não é necessário carregar novamente aqui para evitar duplicação
@@ -454,6 +458,82 @@ export default function Checkout() {
     // ✅ IMEDIATO: Parar loading para mostrar botão
     setLoading(false);
   }, []);
+
+  // ✅ Retry da persistência do quiz quando o usuário volta à aba (rede pode ter voltado)
+  useEffect(() => {
+    const onVisible = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const payload = earlyFailedPayloadRef.current;
+      if (!payload) return;
+      try {
+        const res = await insertQuizWithRetry(payload);
+        if (res.success && res.data?.id) {
+          earlyFailedPayloadRef.current = null;
+          setQuizPersistFailed(false);
+          setQuiz((prev) => (prev ? { ...prev, id: res.data?.id, session_id: payload.session_id } : prev));
+          logger.debug('✅ [Checkout] Quiz persistido no retry (visibility)', { quiz_id: res.data?.id });
+        }
+      } catch (_) {
+        // Mantém payload no ref para nova tentativa ao clicar em Pagar
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  // ✅ Criar pedido na hora: assim que tiver quiz + email + whatsapp válidos (pedido salvo antes de clicar em Pagar)
+  useEffect(() => {
+    if (!quiz?.id) return;
+    const emailOk = emailSchema.safeParse(email).success;
+    const whatsappOk = whatsappSchema.safeParse(whatsapp).success;
+    if (!emailOk || !whatsappOk) return;
+    if (earlyOrderQuizIdRef.current === quiz.id) return;
+    const normEmail = normalizedEmailRef.current || sanitizeEmail(email);
+    const normWhatsapp = normalizedWhatsAppRef.current || formatWhatsappForCakto(whatsapp);
+    if (!normEmail || !normWhatsapp) return;
+
+    earlyOrderQuizIdRef.current = quiz.id;
+    const caktoConfig = getCaktoConfig();
+
+    void (async () => {
+      const { data: existing } = await supabase.from('orders').select('id').eq('quiz_id', quiz.id).limit(1).maybeSingle();
+      if (existing?.id) {
+        earlyOrderIdRef.current = existing.id;
+        logger.debug('✅ [Checkout] Pedido já existe para este quiz', { order_id: existing.id });
+        return;
+      }
+      const payload = {
+        quiz_id: quiz.id,
+        user_id: null,
+        plan: selectedPlan as 'standard' | 'express',
+        amount_cents: caktoConfig.amount_cents,
+        status: 'pending' as const,
+        provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
+        payment_provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
+        customer_email: normEmail,
+        customer_whatsapp: normWhatsapp,
+        transaction_id: null,
+      } as Database['public']['Tables']['orders']['Insert'] & { customer_whatsapp: string };
+      const delays = [0, 1000, 2000];
+      let done = false;
+      for (let attempt = 0; attempt < delays.length && !done; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, delays[attempt]));
+        try {
+          const { data, error } = (await supabase
+            .from('orders')
+            .insert(payload)
+            .select('id')
+            .single()) as { data: { id: string } | null; error: unknown };
+          if (!error && data?.id) {
+            earlyOrderIdRef.current = data.id;
+            logger.debug('✅ [Checkout] Pedido criado na hora (quiz + email + whatsapp)', { order_id: data.id });
+            done = true;
+          }
+        } catch (_) {}
+      }
+      if (!done) earlyOrderQuizIdRef.current = null;
+    })();
+  }, [quiz?.id, email, whatsapp, selectedPlan]);
 
   // FASE 2 & 3: Carregar quiz do banco (se vier da URL) ou do localStorage
   // ✅ OTIMIZAÇÃO: Deferir para não bloquear renderização inicial
@@ -634,12 +714,20 @@ export default function Checkout() {
                 if (res.success && res.data?.id) {
                   logger.debug('✅ [Checkout] Quiz persistido antecipadamente no banco', { quiz_id: res.data.id });
                   setQuiz((prev) => (prev ? { ...prev, id: res.data?.id, session_id: sessionId } : prev));
+                  earlyFailedPayloadRef.current = null;
+                  setQuizPersistFailed(false);
                 } else {
+                  earlyFailedPayloadRef.current = earlyPayload;
+                  setQuizPersistFailed(true);
+                  toast.warning('Não foi possível salvar seu progresso. Ao clicar em Pagar tentaremos novamente.');
                   const queued = await enqueueQuizToServer(earlyPayload, res.error);
                   if (queued) logger.debug('✅ [Checkout] Quiz enfileirado para retry (persistência antecipada)');
                 }
               } catch (e) {
                 logger.warn('⚠️ [Checkout] Erro na persistência antecipada do quiz', e);
+                earlyFailedPayloadRef.current = earlyPayload;
+                setQuizPersistFailed(true);
+                toast.warning('Não foi possível salvar seu progresso. Ao clicar em Pagar tentaremos novamente.');
                 await enqueueQuizToServer(earlyPayload, e);
               }
             })();
@@ -1914,6 +2002,31 @@ export default function Checkout() {
         currentLanguage,
         allTrackingParams
       );
+
+      // ✅ Se o pedido já foi criado na hora (quiz + email + whatsapp), só atualizar dados + URL e redirecionar
+      const existingOrderId = earlyOrderIdRef.current;
+      if (existingOrderId) {
+        const finalRedirectUrl = generateCaktoUrl(
+          existingOrderId,
+          normalizedEmail,
+          normalizedWhatsApp,
+          currentLanguage,
+          allTrackingParams
+        );
+        try {
+          await supabase
+            .from('orders')
+            .update({
+              customer_email: normalizedEmail,
+              customer_whatsapp: normalizedWhatsApp,
+              cakto_payment_url: finalRedirectUrl,
+            } as Database['public']['Tables']['orders']['Update'])
+            .eq('id', existingOrderId);
+        } catch (_) {}
+        clearQuizSessionId();
+        window.location.href = finalRedirectUrl;
+        return;
+      }
       
       // ✅ Preparar dados do quiz para checkout (antes de redirecionar)
       const quizForCheckoutPrep = {

@@ -24,7 +24,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useUtmParams } from '@/hooks/useUtmParams';
 import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { validateQuiz, sanitizeQuiz, sanitizeString, formatValidationErrors, type QuizData, type ValidationError } from '@/utils/quizValidation';
-import { saveQuizToStorage, loadQuizFromStorage } from '@/utils/quizSync';
+import { saveQuizToStorage, loadQuizFromStorage, getOrCreateQuizSessionId } from '@/utils/quizSync';
+import { insertQuizWithRetry, enqueueQuizToServer, type QuizPayload } from '@/utils/quizInsert';
 import QuizProgress from './QuizSteps/QuizProgress';
 import QuizNavigation from './QuizSteps/QuizNavigation';
 import QuizStep1 from './QuizSteps/QuizStep1';
@@ -786,12 +787,50 @@ const Quiz = memo(() => {
       }
 
       const saveResult = await saveQuizToStorage(sanitizedData);
+      const sessionId = getOrCreateQuizSessionId();
+      const payload: QuizPayload = {
+        user_id: null,
+        customer_email: null,
+        customer_whatsapp: null,
+        about_who: sanitizedData.about_who ?? '',
+        relationship: sanitizedData.relationship,
+        style: sanitizedData.style ?? '',
+        language: sanitizedData.language ?? 'pt',
+        vocal_gender: sanitizedData.vocal_gender ?? null,
+        qualities: sanitizedData.qualities,
+        memories: sanitizedData.memories,
+        message: sanitizedData.message,
+        key_moments: (quizData as any).key_moments ?? null,
+        occasion: (quizData as any).occasion ?? null,
+        desired_tone: (quizData as any).desired_tone ?? null,
+        answers: (quizData as any).utm_params ? { utm_params: (quizData as any).utm_params } : undefined,
+        session_id: sessionId,
+      };
+
       if (!saveResult.success) {
         devError('❌ [Quiz] Erro ao salvar quiz no storage:', saveResult.error);
         toast.error(t('quiz.messages.errorSaving'));
-        isSubmittingRef.current = false;
-        setLoading(false);
-        return;
+        void (async () => {
+          try {
+            const res = await insertQuizWithRetry(payload);
+            if (!res.success) await enqueueQuizToServer(payload, res.error);
+          } catch (e) {
+            await enqueueQuizToServer(payload, e);
+          }
+        })();
+      } else {
+        try {
+          const res = await insertQuizWithRetry(payload);
+          if (!res.success) {
+            await enqueueQuizToServer(payload, res.error);
+            devWarn('⚠️ [Quiz] Quiz enfileirado para retry (persistência ao concluir)');
+          } else {
+            devLog('✅ [Quiz] Quiz persistido no banco ao concluir', { quiz_id: res.data?.id });
+          }
+        } catch (persistErr) {
+          await enqueueQuizToServer(payload, persistErr);
+          devWarn('⚠️ [Quiz] Erro ao persistir quiz, enfileirado para retry', persistErr);
+        }
       }
 
       // ✅ TRACKING: Rastrear conclusão do quiz (novo)
