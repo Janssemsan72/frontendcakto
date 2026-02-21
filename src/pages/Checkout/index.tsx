@@ -434,7 +434,7 @@ export default function Checkout() {
     if (currentLanguage === 'pt') {
       return 'express'; // Único plano disponível
     } else {
-      return 'express'; // Plano mais popular (48h)
+      return 'express'; // Plano mais popular (6h)
     }
   });
   const [loading, setLoading] = useState(true);

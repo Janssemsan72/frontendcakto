@@ -77,7 +77,7 @@
     },
     "deliveryTime": {
       "title": "Tiempo de Entrega",
-      "description": "Tu música personalizada se entrega en hasta 48 horas después de la confirmación del pago."
+      "description": "Tu música personalizada se entrega en hasta 6h después de la confirmación del pago."
     },
     "whatsIncluded": {
       "title": "¿Qué está incluido?",
@@ -96,7 +96,7 @@
       "customCover": "Portada personalizada",
       "fullLyrics": "Letra completa",
       "unlimitedDownload": "Descarga ilimitada",
-      "delivery48h": "Entrega en 48h"
+      "delivery48h": "Entrega en 6h"
     }
   },
   "testimonials": {
@@ -120,11 +120,11 @@
     "musicFor": "Música para:",
     "style": "Estilo:",
     "delivery": "Entrega:",
-    "delivery24h": "48 horas ⚡",
-    "delivery48h": "48 horas ⚡",
+    "delivery24h": "6h ⚡",
+    "delivery48h": "6h ⚡",
     "total": "Total:",
     "customSongOrder": "Tu Pedido de Canción Personalizada",
-    "deliveryIn48h": "En 48 horas",
+    "deliveryIn48h": "En 6h",
     "deliveryIn7Days": "En 7 días",
     "personalizedMusic": "Música Personalizada",
     "discount70": "70% OFF",
@@ -151,8 +151,8 @@
     "radioQualitySubtitle": "Música profesional, lista para compartir",
     "personalizedLyrics": "Letra Personalizada",
     "writtenFor": "Escrita especialmente para",
-    "delivery24hTitle": "Entrega en 48 Horas",
-    "delivery48hTitle": "Entrega en 48 Horas",
+    "delivery24hTitle": "Entrega en 6h",
+    "delivery48hTitle": "Entrega en 6h",
     "delivery7DaysTitle": "Entrega en 7 Días",
     "perfectForLastMinute": "Perfecto para regalos de último minuto",
     "whyChooseMusicLovely": "⭐ ¿Por Qué Elegir MusicLovely?",
@@ -166,8 +166,8 @@
       "fullLyrics": "Letra completa",
       "unlimitedDownload": "Descarga ilimitada",
       "professionalProduction": "Producción profesional",
-      "delivery24h": "Entrega en 48h ⚡",
-      "delivery48h": "Entrega en 48h ⚡"
+      "delivery24h": "Entrega en 6h ⚡",
+      "delivery48h": "Entrega en 6h ⚡"
     },
     "errors": {
       "invalidEmail": "Email inválido",
@@ -309,7 +309,7 @@
       },
       "deliveryTimes": {
         "question": "¿Cómo funcionan los plazos?",
-        "answer": "En el plan Estándar, tu música estará lista en hasta 7 días. En el plan Express, entregamos en hasta 48 horas. Recibes una vista previa antes de la liberación final."
+        "answer": "En el plan Estándar, tu música estará lista en hasta 7 días. En el plan Express, entregamos en hasta 6h. Recibes una vista previa antes de la liberación final."
       },
       "whatYouGet": {
         "question": "¿Qué recibo al final?",
@@ -497,7 +497,7 @@
       },
       "services": {
         "title": "2. Servicios Ofrecidos",
-        "content": "MusicLovely ofrece servicios de creación de música personalizada. Nos comprometemos a entregar productos de alta calidad dentro de los plazos establecidos (7 días para Plan Estándar, 48 horas para Plan Express)."
+        "content": "MusicLovely ofrece servicios de creación de música personalizada. Nos comprometemos a entregar productos de alta calidad dentro de los plazos establecidos (7 días para Plan Estándar, 6h para Plan Express)."
       },
       "copyright": {
         "title": "3. Derechos de Autor y Propiedad",

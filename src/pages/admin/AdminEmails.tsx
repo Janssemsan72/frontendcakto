@@ -532,9 +532,9 @@ export default function AdminEmails() {
           recipient_name: 'Maria Santos',
           order_id: `TEST-${Date.now()}`,
           music_style: 'Pop',
-          plan: 'Express (48 horas)',
+          plan: 'Express (6h)',
           style: 'Pop',
-          delivery_time: '48 horas',
+          delivery_time: '6h',
           release_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')
         };
       } else if (template.template_type === 'music_released') {
@@ -600,9 +600,9 @@ export default function AdminEmails() {
           recipient_name: selectedLanguage === 'en' ? 'Emma' : selectedLanguage === 'es' ? 'Ana' : 'Maria',
           order_id: `TEST-${selectedLanguage.toUpperCase()}-${Date.now()}`,
             music_style: 'Pop',
-          plan: selectedLanguage === 'en' ? 'Express (48 hours)' : selectedLanguage === 'es' ? 'Expreso (48 horas)' : 'Express (48 horas)',
+          plan: selectedLanguage === 'en' ? 'Express (6h)' : selectedLanguage === 'es' ? 'Expreso (6h)' : 'Express (6h)',
           style: 'Pop',
-          delivery_time: selectedLanguage === 'en' ? '48 hours' : '48 horas',
+          delivery_time: selectedLanguage === 'en' ? '6h' : '6h',
           release_date: new Date().toISOString().slice(0,10)
         };
       } else if (template.template_type === 'music_released') {

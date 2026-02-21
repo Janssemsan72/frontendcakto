@@ -416,7 +416,7 @@ export default function Testimonials() {
                   <div className="text-base sm:text-lg text-muted-foreground">Avaliação Média</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">48h</div>
+                  <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">6h</div>
                   <div className="text-base sm:text-lg text-muted-foreground">Tempo de Entrega</div>
                 </div>
               </div>
@@ -485,7 +485,7 @@ export default function Testimonials() {
                   <div className="text-base sm:text-lg text-muted-foreground">Avaliação Média</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">48h</div>
+                  <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">6h</div>
                   <div className="text-base sm:text-lg text-muted-foreground">Tempo de Entrega</div>
                 </div>
               </div>
@@ -720,7 +720,7 @@ export default function Testimonials() {
                 <div className="text-base sm:text-lg text-muted-foreground">Avaliação Média</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">48h</div>
+                <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">6h</div>
                 <div className="text-base sm:text-lg text-muted-foreground">Tempo de Entrega</div>
               </div>
             </div>

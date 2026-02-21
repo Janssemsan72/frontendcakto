@@ -633,7 +633,7 @@ export default function SongDownload() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
-                <span className="font-semibold">Plano:</span> {song.orders?.plan === 'express' ? 'Express (48h)' : 'Standard (7 dias)'}
+                <span className="font-semibold">Plano:</span> {song.orders?.plan === 'express' ? 'Express (6h)' : 'Standard (7 dias)'}
               </div>
               <div>
                 <span className="font-semibold">Status:</span>{' '}

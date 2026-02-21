@@ -88,7 +88,7 @@ export default function Company() {
     },
     {
       number: '3',
-      title: 'Entrega em até 48 horas',
+      title: 'Entrega em até 6h',
       description: 'Você recebe a música final no e-mail cadastrado.'
     }
   ];
@@ -120,7 +120,7 @@ export default function Company() {
   const stats = [
     { number: '20000+', label: 'Músicas Criadas' },
     { number: '98%', label: 'Satisfação' },
-    { number: '48h', label: 'Entrega Rápida' },
+    { number: '6h', label: 'Entrega Rápida' },
     { number: '5.0', label: 'Avaliação Média' }
   ];
 

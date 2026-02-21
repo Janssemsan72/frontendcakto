@@ -32,7 +32,7 @@ export default function HowItWorks() {
       icon: Users,
       title: "2. Nossa Equipe Cria Sua Música",
       description: "Entregamos uma música única, criada com dedicação para transformar sua história em melodia e palavras.",
-      time: "48 horas",
+      time: "6h",
       highlight: "Músicos profissionais",
       details: [
         "Composição da melodia personalizada",
@@ -57,7 +57,7 @@ export default function HowItWorks() {
     {
       icon: Clock,
       title: "Entrega Rápida",
-      description: "Sua música fica pronta em até 48 horas, sem comprometer a qualidade."
+      description: "Sua música fica pronta em até 6h, sem comprometer a qualidade."
     },
     {
       icon: Star,
@@ -74,7 +74,7 @@ export default function HowItWorks() {
   const faq = [
     {
       question: "Quanto tempo leva para criar minha música?",
-      answer: "No plano Expresso, sua música fica pronta em até 48 horas. No plano Padrão, entregamos em até 7 dias."
+      answer: "No plano Expresso, sua música fica pronta em até 6h. No plano Padrão, entregamos em até 7 dias."
     },
     {
       question: "Quem são os músicos que criam as músicas?",
