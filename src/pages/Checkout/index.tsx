@@ -24,6 +24,7 @@ import { logger } from '@/utils/logger';
 import { sanitizeEmail } from '@/utils/sanitize';
 import { insertQuizWithRetry, type QuizPayload } from '@/utils/quizInsert';
 import { enqueueQuizToServer } from '@/utils/quizInsert';
+import { trackBeginCheckout, trackRedirectToPayment, getGAClientId } from '@/utils/gtmTracking';
 import CheckoutHeader from './components/CheckoutHeader';
 import CheckoutForm from './components/CheckoutForm';
 import CheckoutSummary from './components/CheckoutSummary';
@@ -513,6 +514,7 @@ export default function Checkout() {
         customer_email: normEmail,
         customer_whatsapp: normWhatsapp,
         transaction_id: null,
+        ga_client_id: getGAClientId(),
       } as Database['public']['Tables']['orders']['Insert'] & { customer_whatsapp: string };
       const delays = [0, 1000, 2000];
       let done = false;
@@ -735,6 +737,8 @@ export default function Checkout() {
           
           // Rastrear visualização do checkout (silencioso)
           try {
+            const caktoConf = getCaktoConfig();
+            trackBeginCheckout('', caktoConf.amount_cents / 100, 'BRL');
             if (typeof trackEvent === 'function') {
               trackEvent('checkout_viewed', {
                 quiz_id: quizData.timestamp || 'unknown',
@@ -2020,9 +2024,11 @@ export default function Checkout() {
               customer_email: normalizedEmail,
               customer_whatsapp: normalizedWhatsApp,
               cakto_payment_url: finalRedirectUrl,
+              ga_client_id: getGAClientId(),
             } as Database['public']['Tables']['orders']['Update'])
             .eq('id', existingOrderId);
         } catch (_) {}
+        trackRedirectToPayment(existingOrderId);
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
         return;
@@ -2194,7 +2200,8 @@ export default function Checkout() {
           payment_provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
           customer_email: normalizedEmail,
           customer_whatsapp: normalizedWhatsApp as string,
-          transaction_id: transactionId || null
+          transaction_id: transactionId || null,
+          ga_client_id: getGAClientId(),
         } as Database['public']['Tables']['orders']['Insert'] & { customer_whatsapp: string };
         
         logger.info('📤 [Checkout] Tentando criar pedido no banco...', {
@@ -2348,6 +2355,9 @@ export default function Checkout() {
         gateway: paymentGatewayForRedirect
       });
       
+      // ✅ GTM: Rastrear redirecionamento para pagamento
+      trackRedirectToPayment(orderId);
+
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)
       window.location.href = redirectUrl;
       return; // Sair da função - redirecionamento já iniciado

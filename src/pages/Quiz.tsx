@@ -26,6 +26,7 @@ import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { validateQuiz, sanitizeQuiz, sanitizeString, formatValidationErrors, type QuizData, type ValidationError } from '@/utils/quizValidation';
 import { saveQuizToStorage, loadQuizFromStorage, getOrCreateQuizSessionId } from '@/utils/quizSync';
 import { insertQuizWithRetry, enqueueQuizToServer, type QuizPayload } from '@/utils/quizInsert';
+import { trackQuizStart, trackQuizComplete } from '@/utils/gtmTracking';
 import QuizProgress from './QuizSteps/QuizProgress';
 import QuizNavigation from './QuizSteps/QuizNavigation';
 import QuizStep1 from './QuizSteps/QuizStep1';
@@ -171,6 +172,7 @@ const Quiz = memo(() => {
   useEffect(() => {
     if (!quizStartedTrackedRef.current && step === 1) {
       quizStartedTrackedRef.current = true;
+      trackQuizStart(formData.aboutWho || '', formData.occasion || '');
       if (typeof trackEvent === 'function') {
         trackEvent('quiz_started', {
           pathname: location.pathname,
@@ -764,9 +766,10 @@ const Quiz = memo(() => {
         localStorage.removeItem('editing_token');
 
         // ✅ TRACKING: Rastrear conclusão do quiz (edição)
-        if (!quizCompletedTrackedRef.current && typeof trackEvent === 'function') {
+        if (!quizCompletedTrackedRef.current) {
           quizCompletedTrackedRef.current = true;
-          trackEvent('quiz_completed', {
+          trackQuizComplete(editingQuizId || '', sanitizedData.about_who, sanitizedData.style);
+          if (typeof trackEvent === 'function') trackEvent('quiz_completed', {
             step,
             total_steps: totalSteps,
             is_edit: true,
@@ -834,9 +837,10 @@ const Quiz = memo(() => {
       }
 
       // ✅ TRACKING: Rastrear conclusão do quiz (novo)
-      if (!quizCompletedTrackedRef.current && typeof trackEvent === 'function') {
+      if (!quizCompletedTrackedRef.current) {
         quizCompletedTrackedRef.current = true;
-        trackEvent('quiz_completed', {
+        trackQuizComplete(payload.session_id || '', sanitizedData.about_who, sanitizedData.style);
+        if (typeof trackEvent === 'function') trackEvent('quiz_completed', {
           step,
           total_steps: totalSteps,
           is_edit: false,

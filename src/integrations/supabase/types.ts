@@ -106,6 +106,7 @@ export interface Database {
           magic_token: string;
           user_id: string | null;
           paid_at: string | null;
+          ga_client_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -129,6 +130,7 @@ export interface Database {
           magic_token?: string;
           user_id?: string | null;
           paid_at?: string | null;
+          ga_client_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -152,6 +154,7 @@ export interface Database {
           magic_token?: string;
           user_id?: string | null;
           paid_at?: string | null;
+          ga_client_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

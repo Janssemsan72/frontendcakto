@@ -5,6 +5,7 @@ import { CheckCircle2, MessageCircle, ChevronDown } from '@/utils/iconImports';
 import { useUtmParams } from '@/hooks/useUtmParams';
 import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { clearQuizSessionId } from '@/utils/quizSync';
+import { trackPageView } from '@/utils/gtmTracking';
 import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/components/Logo';
 
@@ -65,6 +66,7 @@ export default function PaymentSuccess() {
           }
 
           // Rastrear sucesso do pagamento
+          trackPageView('/payment-success', 'Pagamento Confirmado');
           trackEvent('payment_success', {
             order_id: orderId,
             pathname: window.location.pathname,

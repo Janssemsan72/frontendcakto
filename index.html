@@ -2,6 +2,15 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Google Tag Manager (Stape server-side) -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com/63grxzipls.js?'+i;
+    f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
+    '9b=GghNLi41XzCcijrCfZBuqDzBWp3qSrBEZCqBUfQVz4CWGHWF91iaEw%3D%3D');</script>
+    <!-- End Google Tag Manager -->
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Musiclovely - Crie músicas personalizadas para quem você ama</title>
     
@@ -129,7 +138,8 @@
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
     
-    <!-- ✅ FASE 2: Preconnect para Utmify e Facebook (críticos para tracking) -->
+    <!-- ✅ FASE 2: Preconnect para Utmify, Facebook e GTM Stape (críticos para tracking) -->
+    <link rel="preconnect" href="https://api.musiclovely.com" crossorigin />
     <link rel="preconnect" href="https://cdn.utmify.com.br" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
@@ -239,6 +249,11 @@
     </script>
   </head>
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://api.musiclovely.com/ns.html?id=GTM-TKPCMTNR"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <div id="root"></div>
     <!-- ✅ OTIMIZAÇÃO: Script principal será injetado pelo Vite durante o build -->
     
