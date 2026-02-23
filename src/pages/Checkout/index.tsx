@@ -34,6 +34,23 @@ import CheckoutSidebar from './components/CheckoutSidebar';
 import { useCheckoutForm } from './hooks/useCheckoutForm';
 import { useCheckoutAudio } from './hooks/useCheckoutAudio';
 
+function saveGAClientIdForOrder(orderId: string) {
+  const cid = getGAClientId();
+  if (!cid) return;
+  supabase
+    .from('orders')
+    .update({ ga_client_id: cid } as any)
+    .eq('id', orderId)
+    .then(({ error }) => {
+      if (error) {
+        try { localStorage.setItem(`ga_cid_${orderId}`, cid); } catch {}
+        logger.debug('[Checkout] ga_client_id salvo em localStorage (schema cache pendente)', { orderId });
+      } else {
+        logger.debug('[Checkout] ga_client_id salvo no pedido', { orderId });
+      }
+    });
+}
+
 // Interface para resposta da edge function stripe-checkout
 interface StripeCheckoutResponse {
   success: boolean;
@@ -514,7 +531,6 @@ export default function Checkout() {
         customer_email: normEmail,
         customer_whatsapp: normWhatsapp,
         transaction_id: null,
-        ga_client_id: getGAClientId(),
       } as Database['public']['Tables']['orders']['Insert'] & { customer_whatsapp: string };
       const delays = [0, 1000, 2000];
       let done = false;
@@ -530,6 +546,7 @@ export default function Checkout() {
             earlyOrderIdRef.current = data.id;
             logger.debug('✅ [Checkout] Pedido criado na hora (quiz + email + whatsapp)', { order_id: data.id });
             done = true;
+            saveGAClientIdForOrder(data.id);
           }
         } catch (_) {}
       }
@@ -2024,10 +2041,10 @@ export default function Checkout() {
               customer_email: normalizedEmail,
               customer_whatsapp: normalizedWhatsApp,
               cakto_payment_url: finalRedirectUrl,
-              ga_client_id: getGAClientId(),
             } as Database['public']['Tables']['orders']['Update'])
             .eq('id', existingOrderId);
         } catch (_) {}
+        saveGAClientIdForOrder(existingOrderId);
         trackRedirectToPayment(existingOrderId);
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
@@ -2201,7 +2218,6 @@ export default function Checkout() {
           customer_email: normalizedEmail,
           customer_whatsapp: normalizedWhatsApp as string,
           transaction_id: transactionId || null,
-          ga_client_id: getGAClientId(),
         } as Database['public']['Tables']['orders']['Insert'] & { customer_whatsapp: string };
         
         logger.info('📤 [Checkout] Tentando criar pedido no banco...', {
@@ -2252,6 +2268,7 @@ export default function Checkout() {
         
         orderId = orderData.id;
         orderCreated = true;
+        saveGAClientIdForOrder(orderId);
         
         logger.info('✅ [Checkout] Pedido criado com sucesso no banco!', {
           order_id: orderId,
