@@ -2703,7 +2703,6 @@ export default function Checkout() {
                     rel="nofollow noopener"
                     onClick={(e) => {
                       e.preventDefault();
-                      e.stopPropagation();
                       handleCheckout(false);
                     }}
                   >
@@ -2796,7 +2795,6 @@ export default function Checkout() {
                       rel="nofollow noopener"
                       onClick={(e) => {
                         e.preventDefault();
-                        e.stopPropagation();
                         if (!processing) {
                           handleCheckout(false);
                         }
@@ -3138,7 +3136,6 @@ export default function Checkout() {
             rel="nofollow noopener"
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               if (!processing) {
                 handleCheckout(false);
               }
