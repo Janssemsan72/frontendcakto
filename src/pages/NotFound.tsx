@@ -5,29 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertCircle, Home } from "@/utils/iconImports";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUtmParams } from "@/hooks/useUtmParams";
-import { useUtmifyTracking } from "@/hooks/useUtmifyTracking";
 
 const NotFound = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { navigateWithUtms } = useUtmParams();
-  const { trackEvent } = useUtmifyTracking();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-    
-    // Rastrear erro 404
-    try {
-      if (typeof trackEvent === 'function') {
-        trackEvent('404_error', {
-          pathname: location.pathname,
-          search: location.search,
-        });
-      }
-    } catch (error) {
-      console.warn('Erro ao rastrear evento 404:', error);
-    }
-  }, [location.pathname, location.search, trackEvent]);
+  }, [location.pathname, location.search]);
 
   const handleGoHome = () => {
     navigateWithUtms('/');

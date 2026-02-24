@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, MessageCircle, ChevronDown } from '@/utils/iconImports';
 import { useUtmParams } from '@/hooks/useUtmParams';
-import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { clearQuizSessionId } from '@/utils/quizSync';
 import { trackPageView } from '@/utils/gtmTracking';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +18,6 @@ interface OrderData {
 export default function PaymentSuccess() {
   // ✅ OTIMIZAÇÃO: Removido useTranslation não utilizado
   const { utms, hasUtms } = useUtmParams();
-  const { trackEvent } = useUtmifyTracking();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(20);
@@ -67,16 +65,9 @@ export default function PaymentSuccess() {
 
           // Rastrear sucesso do pagamento
           trackPageView('/payment-success', 'Pagamento Confirmado');
-          trackEvent('payment_success', {
-            order_id: orderId,
-            pathname: window.location.pathname,
-          });
         } else {
           // Rastrear mesmo sem order_id
-          trackEvent('payment_success', {
-            order_id: 'unknown',
-            pathname: window.location.pathname,
-          });
+          trackPageView('/payment-success', 'Pagamento Confirmado');
         }
       } catch (error) {
         // ✅ OTIMIZAÇÃO: Remover console.error em produção (manter apenas em dev)
@@ -92,7 +83,7 @@ export default function PaymentSuccess() {
     };
 
     fetchOrderData();
-  }, [trackEvent]);
+  }, []);
 
   // Função para redirecionar para WhatsApp e cancelar redirecionamento automático
   const handleWhatsAppClick = () => {
@@ -110,13 +101,7 @@ export default function PaymentSuccess() {
     setRedirectCancelled(true);
     setCountdown(0);
     
-    // Rastrear clique no botão WhatsApp
-    trackEvent('whatsapp_button_clicked', {
-      order_id: orderData?.id || 'unknown',
-      source: 'payment_success',
-    });
-    
-    // Redirecionar diretamente (não em nova aba) para evitar duplicação
+    // Redirecionar diretamente (não em nova aba) para evitar duplicação (não em nova aba) para evitar duplicação
     window.location.href = whatsappUrl;
   };
 
@@ -139,13 +124,6 @@ export default function PaymentSuccess() {
 
       // Redirecionamento automático após 20 segundos
       redirectTimerRef.current = setTimeout(() => {
-        // Rastrear redirecionamento automático
-        trackEvent('whatsapp_auto_redirect', {
-          order_id: orderData?.id || 'unknown',
-          source: 'payment_success',
-          delay: 20000,
-        });
-        
         // Redirecionar para WhatsApp
         window.location.href = whatsappUrl;
       }, 20000); // 20 segundos
@@ -161,7 +139,7 @@ export default function PaymentSuccess() {
         }
       };
     }
-  }, [loading, redirectCancelled, orderData?.id, whatsappUrl, trackEvent]);
+  }, [loading, redirectCancelled, orderData?.id, whatsappUrl]);
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center p-2 sm:p-4" style={{ background: '#F5F0EB' }}>

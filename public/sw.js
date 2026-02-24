@@ -83,7 +83,6 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('supabase') ||
     url.hostname.includes('hotmart') ||
     url.hostname.includes('cakto') ||
-    url.hostname.includes('utmify') ||
     url.hostname.includes('facebook')
   ) {
     return;

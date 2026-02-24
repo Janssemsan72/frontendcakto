@@ -18,8 +18,7 @@ export function useGlobalErrorHandler() {
                             errorSource.includes('Function');
       
       // Verificar se é erro de biblioteca externa conhecida
-      const isExternalLibraryError = errorSource.includes('utmify') ||
-                                    errorMessage.includes('Cannot read properties of undefined') ||
+      const isExternalLibraryError = errorMessage.includes('Cannot read properties of undefined') ||
                                     errorMessage.includes('reading \'forEach\'');
       
       // Filtrar erros de recursos do navegador (não são erros críticos do código)

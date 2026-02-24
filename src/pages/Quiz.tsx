@@ -22,7 +22,6 @@ import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUtmParams } from '@/hooks/useUtmParams';
-import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { validateQuiz, sanitizeQuiz, sanitizeString, formatValidationErrors, type QuizData, type ValidationError } from '@/utils/quizValidation';
 import { saveQuizToStorage, loadQuizFromStorage, getOrCreateQuizSessionId } from '@/utils/quizSync';
 import { insertQuizWithRetry, enqueueQuizToServer, type QuizPayload } from '@/utils/quizInsert';
@@ -42,7 +41,6 @@ const Quiz = memo(() => {
   const location = useLocation();
   // ✅ SIMPLIFICADO: Preservar UTMs através do funil
   const { navigateWithUtms, utms } = useUtmParams();
-  const { trackEvent } = useUtmifyTracking();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
@@ -173,14 +171,8 @@ const Quiz = memo(() => {
     if (!quizStartedTrackedRef.current && step === 1) {
       quizStartedTrackedRef.current = true;
       trackQuizStart(formData.aboutWho || '', formData.occasion || '');
-      if (typeof trackEvent === 'function') {
-        trackEvent('quiz_started', {
-          pathname: location.pathname,
-          hasUtms: Object.keys(utms || {}).length > 0,
-        }).catch(() => {});
-      }
     }
-  }, [step, trackEvent, location.pathname, utms]);
+  }, [step, location.pathname, utms]);
 
   // ✅ OTIMIZAÇÃO: Preload agressivo do Checkout quando usuário está no Quiz
   // Preload quando chega no step 2 ou mais (mais cedo para garantir que está pronto)
@@ -671,21 +663,12 @@ const Quiz = memo(() => {
       return;
     }
     isStepChangingRef.current = true;
-    
-    // ✅ TRACKING: Rastrear conclusão de etapa
-    if (typeof trackEvent === 'function') {
-      trackEvent('quiz_step_completed', {
-        step,
-        total_steps: totalSteps,
-        progress: Math.round((step / totalSteps) * 100),
-      }).catch(() => {});
-    }
-    
+
     setStep(prev => Math.min(prev + 1, totalSteps));
     requestAnimationFrame(() => {
       isStepChangingRef.current = false;
     });
-  }, [validateStep, step, totalSteps, trackEvent]);
+  }, [validateStep, step, totalSteps]);
 
   const handleBack = useCallback(() => {
     if (isStepChangingRef.current) return;
@@ -769,13 +752,6 @@ const Quiz = memo(() => {
         if (!quizCompletedTrackedRef.current) {
           quizCompletedTrackedRef.current = true;
           trackQuizComplete(editingQuizId || '', sanitizedData.about_who, sanitizedData.style);
-          if (typeof trackEvent === 'function') trackEvent('quiz_completed', {
-            step,
-            total_steps: totalSteps,
-            is_edit: true,
-            about_who: sanitizedData.about_who,
-            style: sanitizedData.style,
-          }).catch(() => {});
         }
 
         if (isNavigatingRef.current) return;
@@ -840,13 +816,6 @@ const Quiz = memo(() => {
       if (!quizCompletedTrackedRef.current) {
         quizCompletedTrackedRef.current = true;
         trackQuizComplete(payload.session_id || '', sanitizedData.about_who, sanitizedData.style);
-        if (typeof trackEvent === 'function') trackEvent('quiz_completed', {
-          step,
-          total_steps: totalSteps,
-          is_edit: false,
-          about_who: sanitizedData.about_who,
-          style: sanitizedData.style,
-        }).catch(() => {});
       }
 
       if (isNavigatingRef.current) return;

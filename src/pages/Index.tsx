@@ -6,7 +6,6 @@ import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 
 import { useUtmParams } from "@/hooks/useUtmParams";
-import { useUtmifyTracking } from "@/hooks/useUtmifyTracking";
 import { Mail } from "@/utils/iconImports";
 
 // ✅ CORREÇÃO PRODUÇÃO: Renderizar componentes críticos imediatamente (sem lazy load)
@@ -172,7 +171,6 @@ const Index = memo(() => {
   
   // ✅ SIMPLIFICADO: UTMs são capturados automaticamente pelo hook useUtmParams
   const { hasUtms } = useUtmParams();
-  const { trackEvent } = useUtmifyTracking();
 
   // ✅ OTIMIZAÇÃO FASE 1.1: Animações como enhancement (conteúdo precisa aparecer sempre)
   useEffect(() => {
@@ -237,42 +235,6 @@ const Index = memo(() => {
       observer.disconnect();
     };
   }, []);
-
-  // ✅ OTIMIZAÇÃO PERFORMANCE: Deferir tracking de homepage_viewed para não bloquear renderização inicial
-  useEffect(() => {
-    const win = typeof window === "undefined" ? undefined : window;
-    if (!win) return;
-
-    let cancelled = false;
-    const schedule = () => {
-      if (cancelled) return;
-      try {
-        trackEvent('homepage_viewed', {
-          pathname: win.location.pathname,
-          hasUtms,
-        }).catch(() => {});
-      } catch (error) {
-        void error;
-      }
-    };
-
-    if ('requestIdleCallback' in win) {
-      const w = win as any;
-      const id = w.requestIdleCallback(schedule, { timeout: 6000 });
-      return () => {
-        cancelled = true;
-        if (typeof w.cancelIdleCallback === 'function') {
-          w.cancelIdleCallback(id);
-        }
-      };
-    }
-
-    const timer = globalThis.setTimeout(schedule, 5000);
-    return () => {
-      cancelled = true;
-      globalThis.clearTimeout(timer);
-    };
-  }, [trackEvent, hasUtms]);
 
   // ✅ OTIMIZAÇÃO FASE 1.3: Preload condicional de Quiz/Checkout quando usuário está próximo de seções com botões
   useEffect(() => {

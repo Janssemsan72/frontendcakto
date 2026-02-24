@@ -58,8 +58,6 @@ import App from "./App.tsx";
 
 import { setupGlobalErrorHandling } from "./utils/errors/errorHandler";
 import { setupErrorSuppression } from "./utils/errors/errorSuppression";
-// ✅ FASE 5: Sistema de diagnóstico para Facebook Pixel e Utmify
-import { initDiagnostics } from "./utils/pixelDiagnostics";
 
 const patchDomNotFoundErrors = () => {
   const NodeProto = (globalThis as any)?.Node?.prototype;
@@ -126,8 +124,6 @@ declare global {
 // ✅ OTIMIZAÇÃO: Error handlers e i18n carregados após paint para não bloquear FCP
 let cleanupErrorSuppression: (() => void) | null = null;
 let cleanupErrorHandling: (() => void) | null = null;
-// ✅ FASE 5: Cleanup do sistema de diagnóstico
-let cleanupDiagnostics: (() => void) | null = null;
 // ✅ OTIMIZAÇÃO: Flag para evitar múltiplas inicializações do i18n
 let i18nInitialized = false;
 
@@ -171,24 +167,6 @@ if (typeof window !== 'undefined') {
     });
   });
   
-  // ✅ FASE 5: Inicializar sistema de diagnóstico (não bloqueia renderização)
-  requestAnimationFrame(() => {
-    let diagnosticsEnabled = false;
-    try {
-      diagnosticsEnabled = isDev || localStorage.getItem('utmify_debug') === 'true';
-    } catch {
-    }
-    if (!diagnosticsEnabled) return;
-    try {
-      cleanupDiagnostics = initDiagnostics();
-    } catch (error) {
-      // Ignorar erros no diagnóstico para não quebrar a aplicação
-      if (isDev) {
-        console.warn('⚠️ [Main] Erro ao inicializar diagnóstico:', error);
-      }
-    }
-  });
-
   // ✅ OTIMIZAÇÃO: Registrar Service Worker após paint para cache de assets
   if ('serviceWorker' in navigator && isProd) {
     requestIdleCallback(() => {

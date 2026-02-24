@@ -16,7 +16,6 @@ import { ZodError } from 'zod';
 import { createCheckoutLogger } from '@/lib/checkout-logger';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUtmParams } from '@/hooks/useUtmParams';
-import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import { emailSchema, formatWhatsappForCakto, whatsappSchema } from '@/pages/Checkout/utils/checkoutValidation';
 import { validateQuiz, sanitizeQuiz, formatValidationErrors, type QuizData as ValidationQuizData } from '@/utils/quizValidation';
 import { checkDataDivergence, markQuizAsSynced, getOrCreateQuizSessionId, clearQuizSessionId } from '@/utils/quizSync';
@@ -147,9 +146,6 @@ if (typeof window !== 'undefined') {
   ]).catch(() => {});
 }
 
-// ✅ SIMPLIFICADO: Confia no Utmify para capturar UTMs automaticamente
-// O código apenas lê do hook useUtmParams() que já faz o merge URL + localStorage
-
 export default function Checkout() {
   logger.debug('Checkout component mounted');
   
@@ -203,9 +199,6 @@ export default function Checkout() {
   // ✅ SIMPLIFICADO: Preservar UTMs através do funil - usa apenas o hook que já faz merge URL + localStorage
   // ✅ CORREÇÃO: Usar allTrackingParams para incluir xcod e outros parâmetros além dos UTMs padrão
   const { navigateWithUtms, getUtmQueryString, utms, allTrackingParams } = useUtmParams();
-  
-  // Hook para tracking de eventos
-  const { trackEvent } = useUtmifyTracking();
   
   // ✅ Flag para evitar múltiplos toasts de erro
   const toastShownRef = useRef(false);
@@ -468,10 +461,6 @@ export default function Checkout() {
   const earlyFailedPayloadRef = useRef<QuizPayload | null>(null);
   const earlyOrderIdRef = useRef<string | null>(null);
   const earlyOrderQuizIdRef = useRef<string | null>(null);
-
-  // ⚠️ NOTA: Scripts UTMify são carregados globalmente no index.html
-  // Não é necessário carregar novamente aqui para evitar duplicação
-  // Os scripts já estão configurados no <head> do index.html
 
   // ✅ OTIMIZAÇÃO CRÍTICA: Deferir loading inicial para não bloquear renderização
   // Mostrar botão imediatamente, carregar dados depois
@@ -759,15 +748,6 @@ export default function Checkout() {
           try {
             const caktoConf = getCaktoConfig();
             trackBeginCheckout('', caktoConf.amount_cents / 100, 'BRL');
-            if (typeof trackEvent === 'function') {
-              trackEvent('checkout_viewed', {
-                quiz_id: quizData.timestamp || 'unknown',
-                about_who: quizData.about_who,
-                style: quizData.style,
-                language: quizData.language,
-              });
-            }
-            
           } catch (trackError) {
             logger.warn('⚠️ [Checkout] Erro ao rastrear evento:', trackError);
           }
@@ -1400,21 +1380,6 @@ export default function Checkout() {
           setLoading(false);
           logger.debug('✅ [Checkout] Quiz carregado do localStorage');
           
-          // Rastrear visualização do checkout (silencioso)
-          try {
-            if (typeof trackEvent === 'function') {
-              trackEvent('checkout_viewed', {
-                quiz_id: quizData.timestamp || 'unknown',
-                about_who: quizData.about_who,
-                style: quizData.style,
-                language: quizData.language,
-              });
-            }
-            
-          } catch (trackError) {
-            logger.warn('⚠️ [Checkout] Erro ao rastrear evento:', trackError);
-          }
-          
           return;
         } catch (error) {
           logger.error('❌ [Checkout] Error parsing quiz data:', {
@@ -1527,22 +1492,6 @@ export default function Checkout() {
           setShouldRedirect(false); // Resetar flag de redirecionamento
           setLoading(false);
           logger.debug('✅ Draft carregado, loading set to false');
-          
-          // Rastrear visualização do checkout (draft restaurado)
-          try {
-            if (typeof trackEvent === 'function') {
-              trackEvent('checkout_viewed', {
-                quiz_id: draft.quizData.timestamp || 'unknown',
-                about_who: draft.quizData.about_who,
-                style: draft.quizData.style,
-                language: draft.quizData.language,
-                source: 'draft_restored',
-              });
-            }
-            
-          } catch (trackError) {
-            logger.warn('⚠️ [Checkout] Erro ao rastrear evento:', trackError);
-          }
           
           toast.info(t('checkout.errors.orderRecovered'));
           return;
@@ -1904,20 +1853,6 @@ export default function Checkout() {
     // ✅ IMPORTANTE: Este estado NÃO deve ser resetado antes do redirecionamento quando tudo está correto
     // ✅ O botão ficará em loading até o redirecionamento acontecer
     setProcessing(true);
-
-    // ✅ OTIMIZAÇÃO: Rastreamento não bloqueante (fire and forget) - mover para background
-    setTimeout(() => {
-      if (typeof trackEvent === 'function') {
-        trackEvent('checkout_form_filled', {
-          plan: selectedPlan,
-          has_email: !!email,
-          has_whatsapp: !!whatsapp,
-          about_who: quiz.about_who,
-          style: quiz.style,
-        }).catch(() => {});
-      }
-    }, 0);
-    
 
     // ✅ Determinar gateway (sempre Hotmart)
     const selectedGateway = getPaymentGateway();
@@ -2401,22 +2336,6 @@ export default function Checkout() {
       
       // Usar a função extractErrorMessage que já foi definida no escopo acima
       const actualErrorMessage = extractErrorMessage(error);
-      
-      // ✅ OTIMIZAÇÃO: Log e tracking de erro em background (não bloqueante)
-      setTimeout(() => {
-        try {
-          if (typeof trackEvent === 'function') {
-            trackEvent('payment_error', {
-              order_id: 'unknown',
-              plan: selectedPlan,
-              error_message: actualErrorMessage,
-              payment_provider: 'cakto',
-            }).catch(() => {});
-          }
-        } catch (error) {
-          void error;
-        }
-      }, 0);
       
       // Mapa de mensagens amigáveis
       const errorMessages: Record<string, string> = {

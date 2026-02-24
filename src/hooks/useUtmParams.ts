@@ -5,9 +5,6 @@ import { getOrCreateSck, getOrCreateFbc } from '@/utils/gtmTracking';
 /**
  * Hook para capturar, salvar e preservar parâmetros UTM através do funil
  * Mantém UTMs em localStorage e injeta em todas as navegações
- * 
- * ✅ SIMPLIFICADO: Confia no Utmify para capturar UTMs automaticamente
- * O código apenas lê da URL, salva no localStorage e passa adiante
  */
 export function useUtmParams() {
   const [searchParams] = useSearchParams();
@@ -132,10 +129,6 @@ export function useUtmParams() {
       localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
     }
   }, [allTrackingParams, isAdminRoute]);
-
-  // ✅ DESABILITADO: Injeção de UTMs na URL removida para evitar conflito com script UTMify
-  // O script UTMify (https://cdn.utmify.com.br/scripts/utms/latest.js) já gerencia os UTMs automaticamente
-  // Manter apenas a leitura e salvamento no localStorage para uso interno do React
 
   /**
    * Função helper para navegar preservando TODOS os parâmetros de tracking

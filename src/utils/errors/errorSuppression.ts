@@ -11,9 +11,8 @@ function isThirdPartyTrackingScript(filenameOrStack: string): boolean {
     .split('#')[0]
     .split('?')[0];
   return (
-    str.includes('pixel.js') || // UTMify pixel
-    str.includes('pixel-tiktok.js') || // UTMify tiktok pixel
-    str.includes('utmify') ||
+    str.includes('pixel.js') ||
+    str.includes('pixel-tiktok.js') ||
     str.includes('fbevents.js') || // Meta Pixel base script
     str.includes('connect.facebook.net') ||
     str.includes('facebook.net')
@@ -34,41 +33,7 @@ function isUnexpectedEndOfInputError(message: string): boolean {
 }
 
 /**
- * Verifica se o erro é relacionado ao UTMify tentando conectar em localhost:3001
- */
-function isUtmifyTrackingError(error: any): boolean {
-  if (!isDev) return false;
-  
-  const errorMessage = error?.message || String(error) || '';
-  const errorStack = error?.stack || '';
-  const errorUrl = error?.url || '';
-  
-  // Padrões que indicam erro do UTMify tentando conectar em localhost:3001
-  const utmifyPatterns = [
-    'localhost:3001',
-    ':3001/tracking',
-    'ERR_CONNECTION_REFUSED',
-    'Failed to fetch',
-    'NetworkError',
-  ];
-  
-  // Verificar se o erro contém algum dos padrões
-  const hasUtmifyPattern = utmifyPatterns.some(pattern => 
-    errorMessage.includes(pattern) ||
-    errorStack.includes(pattern) ||
-    errorUrl.includes(pattern)
-  );
-  
-  // Verificar se é do script pixel.js do UTMify
-  const isUtmifyScript = errorStack.includes('pixel.js') || 
-                        errorStack.includes('utmify') ||
-                        errorUrl.includes('utmify');
-  
-  return hasUtmifyPattern && (isUtmifyScript || errorUrl.includes('3001'));
-}
-
-/**
- * Verifica se é um erro conhecido/ruidoso de scripts de tracking (UTMify/Meta/TikTok)
+ * Verifica se é um erro conhecido/ruidoso de scripts de tracking (Meta/TikTok)
  * que não deve quebrar a aplicação.
  *
  * ⚠️ Nota: isso não "corrige" a configuração do Meta Pixel (Traffic Permissions),
@@ -95,10 +60,7 @@ function isKnownTrackingNoiseError(input: any): boolean {
 export function setupErrorSuppression() {
   // Handler para promises rejeitadas (fetch failures, etc)
   const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-    if (isUtmifyTrackingError(event.reason) || isKnownTrackingNoiseError(event.reason)) {
-      if (isDev) {
-        console.debug('🔇 [Error Suppression] Suprimindo erro de tracking UTMify em desenvolvimento');
-      }
+    if (isKnownTrackingNoiseError(event.reason)) {
       event.preventDefault();
       if (typeof event.stopImmediatePropagation === 'function') {
         event.stopImmediatePropagation();
@@ -111,11 +73,7 @@ export function setupErrorSuppression() {
   
   // Handler para erros de rede (fetch, XMLHttpRequest, etc)
   const handleError = (event: ErrorEvent) => {
-    // Verificar se é erro de rede relacionado ao UTMify
-    if (isUtmifyTrackingError(event.error || event) || isKnownTrackingNoiseError(event.error || event)) {
-      if (isDev) {
-        console.debug('🔇 [Error Suppression] Suprimindo erro de rede do UTMify em desenvolvimento');
-      }
+    if (isKnownTrackingNoiseError(event.error || event)) {
       event.preventDefault();
       if (typeof event.stopImmediatePropagation === 'function') {
         event.stopImmediatePropagation();
@@ -126,7 +84,7 @@ export function setupErrorSuppression() {
     }
   };
   
-  // Interceptar fetch para suprimir erros do UTMify
+  // Interceptar fetch para suprimir erros de tracking
   let originalFetch: typeof window.fetch | null = null;
   if (isDev && typeof window !== 'undefined') {
     originalFetch = window.fetch;
@@ -147,16 +105,6 @@ export function setupErrorSuppression() {
       try {
         return await originalFetch!.apply(this, args);
       } catch (error: any) {
-        // Se ainda assim der erro e for do UTMify, suprimir
-        if (isUtmifyTrackingError(error)) {
-          if (isDev) {
-            console.debug('🔇 [Error Suppression] Suprimindo erro de fetch do UTMify');
-          }
-          return new Response(JSON.stringify({ ok: false }), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          });
-        }
         throw error;
       }
     };

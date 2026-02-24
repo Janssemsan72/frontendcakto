@@ -7,7 +7,6 @@ import { Download, Share2, Music, Calendar, Loader2, AlertCircle, Home, Copy, Ch
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUtmParams } from '@/hooks/useUtmParams';
-import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import OptimizedImage from '@/components/OptimizedImage';
 import { LinkWithUtms } from '@/components/LinkWithUtms';
 
@@ -18,7 +17,6 @@ export default function SongDownload() {
   const magicToken = searchParams.get('token') || token;
   const { t } = useTranslation();
   const { navigateWithUtms } = useUtmParams();
-  const { trackEvent } = useUtmifyTracking();
   
   const [song, setSong] = useState<any>(null);
   const [allSongs, setAllSongs] = useState<any[]>([]);
@@ -173,19 +171,6 @@ export default function SongDownload() {
       setSong(data);
       setError(null);
 
-      // Rastrear visualização da música
-      try {
-        if (typeof trackEvent === 'function') {
-          trackEvent('song_download_viewed', {
-            song_id: data.id,
-            status: data.status,
-            is_released: data.status === 'released',
-          });
-        }
-      } catch (trackError) {
-        console.warn('Erro ao rastrear visualização da música:', trackError);
-      }
-
       // Fetch all songs with the same order_id
       if (data.order_id) {
         const { data: orderSongs, error: orderSongsError } = await supabase
@@ -322,16 +307,6 @@ export default function SongDownload() {
           url: shareUrl,
         });
         
-        // Rastrear compartilhamento
-        try {
-          if (typeof trackEvent === 'function') {
-            trackEvent('song_shared', {
-              song_id: id,
-            });
-          }
-        } catch (trackError) {
-          console.warn('Erro ao rastrear compartilhamento:', trackError);
-        }
       } catch (error) {
         // Usuário cancelou o compartilhamento - não é um erro
         if ((error as Error).name !== 'AbortError') {

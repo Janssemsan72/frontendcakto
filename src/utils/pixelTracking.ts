@@ -240,7 +240,6 @@ export function flushEventQueue(): boolean {
   return false;
 }
 
-// ✅ FASE 3: Escutar evento 'fbq-ready' do utmify-loader
 if (typeof window !== 'undefined') {
   window.addEventListener('fbq-ready', () => {
     // Quando fbq estiver disponível, processar queue imediatamente

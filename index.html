@@ -138,9 +138,8 @@
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
     
-    <!-- ✅ FASE 2: Preconnect para Utmify, Facebook e GTM Stape (críticos para tracking) -->
+    <!-- Preconnect para GTM Stape e Facebook (críticos para tracking) -->
     <link rel="preconnect" href="https://api.musiclovely.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.utmify.com.br" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
     <!-- ✅ OTIMIZAÇÃO: DNS prefetch para domínios de terceiros (menos críticos) -->
@@ -148,27 +147,6 @@
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
 
-    <!-- ✅ UTMify/Facebook Pixel: não carregar em /admin (evita erro _id undefined no pixel.js) -->
-    <script>
-      window.pixelId = "68f98a3f196fbe7f0e5683c7";
-      (function() {
-        var path = (window.location.pathname || '');
-        var hostname = (window.location.hostname || '').toLowerCase();
-        if (path.indexOf('/admin') === 0 || path.indexOf('/app/admin') === 0) return;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') return;
-        var a = document.createElement("script");
-        a.async = true;
-        a.src = "https://cdn.utmify.com.br/scripts/pixel/pixel.js";
-        a.onerror = function() { try { console.warn('[Pixel] Erro ao carregar'); } catch(e) {} };
-        (document.head || document.documentElement).appendChild(a);
-        var b = document.createElement("script");
-        b.async = true;
-        b.defer = true;
-        b.src = "https://cdn.utmify.com.br/scripts/utms/latest.js";
-        b.setAttribute("data-utmify-prevent-subids", "");
-        (document.head || document.documentElement).appendChild(b);
-      })();
-    </script>
     
     <!-- ✅ Logo no header: preload para aparecer instantaneamente -->
     <link rel="preload" as="image" href="/images/logo-white.png" fetchpriority="high" />
