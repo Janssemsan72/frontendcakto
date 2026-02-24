@@ -55,11 +55,20 @@ export function trackBeginCheckout(orderId: string, value: number, currency: str
   });
 }
 
+function stripPiiFromUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
 export function trackRedirectToPayment(orderId: string, checkoutUrl?: string): void {
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
     payment_provider: 'cakto',
-    checkout_url: checkoutUrl || '',
+    checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
   });
 }
 
