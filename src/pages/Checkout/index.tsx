@@ -2047,7 +2047,14 @@ export default function Checkout() {
             .eq('id', existingOrderId);
         } catch (_) {}
         saveGAClientIdForOrder(existingOrderId);
-        trackRedirectToPayment(existingOrderId, finalRedirectUrl);
+        trackRedirectToPayment({
+          orderId: existingOrderId,
+          checkoutUrl: finalRedirectUrl,
+          email: normalizedEmail,
+          phone: normalizedWhatsApp,
+          value: plan?.price ?? 0,
+          currency: 'BRL',
+        });
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
         return;
@@ -2375,7 +2382,14 @@ export default function Checkout() {
       });
       
       // ✅ GTM: Rastrear redirecionamento para pagamento
-      trackRedirectToPayment(orderId, redirectUrl);
+      trackRedirectToPayment({
+        orderId,
+        checkoutUrl: redirectUrl,
+        email: normalizedEmail,
+        phone: normalizedWhatsApp,
+        value: plan?.price ?? 0,
+        currency: 'BRL',
+      });
 
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)
       window.location.href = redirectUrl;

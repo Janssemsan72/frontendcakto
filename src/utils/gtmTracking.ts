@@ -12,6 +12,16 @@ function isTrackingEnabled(): boolean {
   return true;
 }
 
+async function sha256Hash(value: string): Promise<string> {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return '';
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function pushToDataLayer(event: string, data?: Record<string, unknown>): void {
   if (!isTrackingEnabled()) return;
   try {
@@ -64,11 +74,30 @@ function stripPiiFromUrl(url: string): string {
   }
 }
 
-export function trackRedirectToPayment(orderId: string, checkoutUrl?: string): void {
+export interface RedirectToPaymentParams {
+  orderId: string;
+  checkoutUrl?: string;
+  email?: string;
+  phone?: string;
+  value?: number;
+  currency?: string;
+}
+
+export async function trackRedirectToPayment(params: RedirectToPaymentParams): Promise<void> {
+  const { orderId, checkoutUrl, email, phone, value, currency } = params;
+
+  const userData: Record<string, string> = {};
+  if (email) userData.em = await sha256Hash(email);
+  if (phone) userData.ph = await sha256Hash(phone.replace(/\D/g, ''));
+
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
     payment_provider: 'cakto',
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
+    user_data: userData,
+    value: value ?? 0,
+    currency: currency || 'BRL',
+    content_name: 'Música Personalizada',
   });
 }
 
