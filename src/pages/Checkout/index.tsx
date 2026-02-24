@@ -24,7 +24,7 @@ import { logger } from '@/utils/logger';
 import { sanitizeEmail } from '@/utils/sanitize';
 import { insertQuizWithRetry, type QuizPayload } from '@/utils/quizInsert';
 import { enqueueQuizToServer } from '@/utils/quizInsert';
-import { trackBeginCheckout, trackRedirectToPayment, getGAClientId } from '@/utils/gtmTracking';
+import { trackBeginCheckout, trackRedirectToPayment, getGAClientId, storeHashedUserData } from '@/utils/gtmTracking';
 import CheckoutHeader from './components/CheckoutHeader';
 import CheckoutForm from './components/CheckoutForm';
 import CheckoutSummary from './components/CheckoutSummary';
@@ -1981,6 +1981,9 @@ export default function Checkout() {
       // Atualizar refs se ainda não foram normalizados
       if (!normalizedEmailRef.current) normalizedEmailRef.current = normalizedEmail;
       if (!normalizedWhatsAppRef.current) normalizedWhatsAppRef.current = normalizedWhatsApp;
+
+      // Persistir hashes de email/phone para FB CAPI (enriquece todos os eventos subsequentes)
+      storeHashedUserData(normalizedEmail, normalizedWhatsApp);
       
       // ✅ OTIMIZAÇÃO CRÍTICA: Salvar quiz completo no localStorage ANTES de qualquer coisa
       // Isso garante que os dados não sejam perdidos mesmo se o redirecionamento acontecer antes do banco
@@ -2050,8 +2053,6 @@ export default function Checkout() {
         trackRedirectToPayment({
           orderId: existingOrderId,
           checkoutUrl: finalRedirectUrl,
-          email: normalizedEmail,
-          phone: normalizedWhatsApp,
           value: plan?.price ?? 0,
           currency: 'BRL',
         });
@@ -2385,8 +2386,6 @@ export default function Checkout() {
       trackRedirectToPayment({
         orderId,
         checkoutUrl: redirectUrl,
-        email: normalizedEmail,
-        phone: normalizedWhatsApp,
         value: plan?.price ?? 0,
         currency: 'BRL',
       });

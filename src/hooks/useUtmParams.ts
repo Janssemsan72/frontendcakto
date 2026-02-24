@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { getOrCreateSck, getOrCreateFbc } from '@/utils/gtmTracking';
 
 /**
  * Hook para capturar, salvar e preservar parâmetros UTM através do funil
@@ -119,12 +120,16 @@ export function useUtmParams() {
   }, [allTrackingParams, isAdminRoute]);
 
   // Salvar parâmetros mesclados no localStorage sempre que mudarem
-  // ✅ CORREÇÃO: Hook sempre é chamado, mas não faz nada para rotas admin
+  // Garante que sck (external_id) exista desde a primeira visita e que _fbc seja gerado se fbclid estiver presente
   useEffect(() => {
     if (isAdminRoute) return;
-    if (Object.keys(allTrackingParams).length > 0) {
-      localStorage.setItem('musiclovely_tracking_params', JSON.stringify(allTrackingParams));
-      console.log('✅ Parâmetros de tracking mesclados e salvos:', allTrackingParams);
+
+    const params = { ...allTrackingParams };
+    if (!params.sck) params.sck = getOrCreateSck();
+    getOrCreateFbc();
+
+    if (Object.keys(params).length > 0) {
+      localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
     }
   }, [allTrackingParams, isAdminRoute]);
 

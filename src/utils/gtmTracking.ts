@@ -4,6 +4,8 @@ declare global {
   }
 }
 
+const USER_DATA_KEY = 'ml_user_data';
+
 function isTrackingEnabled(): boolean {
   const path = window.location.pathname || '';
   if (path.startsWith('/admin') || path.startsWith('/app/admin')) return false;
@@ -11,6 +13,10 @@ function isTrackingEnabled(): boolean {
   if (host === 'localhost' || host === '127.0.0.1') return false;
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// SHA-256 hashing (for FB CAPI Advanced Matching)
+// ---------------------------------------------------------------------------
 
 async function sha256Hash(value: string): Promise<string> {
   const normalized = value.trim().toLowerCase();
@@ -22,15 +28,184 @@ async function sha256Hash(value: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// ---------------------------------------------------------------------------
+// Cookie helpers
+// ---------------------------------------------------------------------------
+
+function getCookie(name: string): string | null {
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function setCookie(name: string, value: string, days: number): void {
+  try {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax`;
+  } catch {
+    // cookie access may fail
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade 1: fbc -- capture fbclid and generate _fbc cookie
+// Format: fb.1.{creation_timestamp}.{fbclid}
+// ---------------------------------------------------------------------------
+
+function getFbclid(): string | null {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl = urlParams.get('fbclid');
+    if (fromUrl) return fromUrl;
+
+    const saved = localStorage.getItem('musiclovely_tracking_params');
+    if (saved) {
+      const params = JSON.parse(saved);
+      if (params.fbclid) return params.fbclid;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function getOrCreateFbc(): string | null {
+  const existing = getCookie('_fbc');
+  if (existing) return existing;
+
+  const fbclid = getFbclid();
+  if (!fbclid) return null;
+
+  const fbc = `fb.1.${Date.now()}.${fbclid}`;
+  setCookie('_fbc', fbc, 90);
+  return fbc;
+}
+
+function getFbp(): string | null {
+  return getCookie('_fbp');
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade 2: external_id via sck
+// ---------------------------------------------------------------------------
+
+export function getOrCreateSck(): string {
+  try {
+    const saved = localStorage.getItem('musiclovely_tracking_params');
+    if (saved) {
+      const params = JSON.parse(saved);
+      if (params.sck) return params.sck;
+    }
+  } catch {
+    // ignore
+  }
+
+  const sck = crypto.randomUUID();
+  try {
+    const saved = localStorage.getItem('musiclovely_tracking_params');
+    const params = saved ? JSON.parse(saved) : {};
+    params.sck = sck;
+    localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
+  } catch {
+    // ignore
+  }
+  return sck;
+}
+
+// ---------------------------------------------------------------------------
+// Upgrade 3: em/ph hash persistence
+// ---------------------------------------------------------------------------
+
+interface PersistedUserData {
+  em?: string;
+  ph?: string;
+  country?: string;
+}
+
+export async function storeHashedUserData(email: string, phone: string): Promise<void> {
+  const [em, ph, country] = await Promise.all([
+    sha256Hash(email),
+    sha256Hash(phone.replace(/\D/g, '')),
+    sha256Hash('br'),
+  ]);
+
+  const data: PersistedUserData = {};
+  if (em) data.em = em;
+  if (ph) data.ph = ph;
+  if (country) data.country = country;
+
+  try {
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
+function getPersistedUserData(): PersistedUserData {
+  try {
+    const raw = localStorage.getItem(USER_DATA_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Enriched user_data builder (combines all 3 upgrades)
+// ---------------------------------------------------------------------------
+
+function buildUserData(): Record<string, string> {
+  const userData: Record<string, string> = {};
+
+  const persisted = getPersistedUserData();
+  if (persisted.em) userData.em = persisted.em;
+  if (persisted.ph) userData.ph = persisted.ph;
+  if (persisted.country) userData.country = persisted.country;
+
+  userData.external_id = getOrCreateSck();
+
+  const fbc = getOrCreateFbc();
+  if (fbc) userData.fbc = fbc;
+
+  const fbp = getFbp();
+  if (fbp) userData.fbp = fbp;
+
+  return userData;
+}
+
+// ---------------------------------------------------------------------------
+// Core: pushToDataLayer (auto-enriched with user_data + event_id)
+// ---------------------------------------------------------------------------
+
 export function pushToDataLayer(event: string, data?: Record<string, unknown>): void {
   if (!isTrackingEnabled()) return;
   try {
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event, ...data });
+
+    const userData = buildUserData();
+    const eventUserData = (data?.user_data as Record<string, string>) || {};
+    const mergedUserData = { ...userData, ...eventUserData };
+
+    const enriched: Record<string, unknown> = {
+      event,
+      event_id: crypto.randomUUID(),
+      ...data,
+      user_data: mergedUserData,
+    };
+
+    window.dataLayer.push(enriched);
   } catch {
     // silently ignore tracking errors
   }
 }
+
+// ---------------------------------------------------------------------------
+// Event-specific tracking functions
+// ---------------------------------------------------------------------------
 
 export function trackPageView(pagePath: string, pageTitle: string): void {
   pushToDataLayer('page_view', {
@@ -65,6 +240,10 @@ export function trackBeginCheckout(orderId: string, value: number, currency: str
   });
 }
 
+// ---------------------------------------------------------------------------
+// redirect_to_payment (simplified -- em/ph come from persisted data)
+// ---------------------------------------------------------------------------
+
 function stripPiiFromUrl(url: string): string {
   try {
     const parsed = new URL(url);
@@ -77,41 +256,32 @@ function stripPiiFromUrl(url: string): string {
 export interface RedirectToPaymentParams {
   orderId: string;
   checkoutUrl?: string;
-  email?: string;
-  phone?: string;
   value?: number;
   currency?: string;
 }
 
-export async function trackRedirectToPayment(params: RedirectToPaymentParams): Promise<void> {
-  const { orderId, checkoutUrl, email, phone, value, currency } = params;
-
-  const userData: Record<string, string> = {};
-  if (email) userData.em = await sha256Hash(email);
-  if (phone) userData.ph = await sha256Hash(phone.replace(/\D/g, ''));
+export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
+  const { orderId, checkoutUrl, value, currency } = params;
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
     payment_provider: 'cakto',
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
-    user_data: userData,
     value: value ?? 0,
     currency: currency || 'BRL',
     content_name: 'Música Personalizada',
   });
 }
 
-/**
- * Extrai o GA4 client_id do cookie _ga.
- * Formato do cookie: GA1.1.XXXXXXXXXX.XXXXXXXXXX
- * O client_id sao os dois ultimos segmentos: XXXXXXXXXX.XXXXXXXXXX
- */
+// ---------------------------------------------------------------------------
+// GA4 Client ID (for server-side purchase tracking via Measurement Protocol)
+// ---------------------------------------------------------------------------
+
 export function getGAClientId(): string | null {
   try {
     const match = document.cookie.match(/(?:^|;\s*)_ga=GA\d+\.\d+\.(.+?)(?:;|$)/);
     if (match?.[1]) return match[1];
 
-    // fallback: tentar ler de _ga_* (GA4 specific cookies)
     const ga4Match = document.cookie.match(/(?:^|;\s*)_ga_[A-Z0-9]+=GS\d+\.\d+\.(.+?)(?:;|$)/);
     if (ga4Match?.[1]) {
       const parts = ga4Match[1].split('.');
