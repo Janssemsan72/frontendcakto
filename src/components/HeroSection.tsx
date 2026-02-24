@@ -1,12 +1,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Star } from "@/utils/iconImports";
-// ✅ DIFERENCIAÇÃO: Usar avatares diferentes da página inicial (não os mesmos das avaliações)
-// Avatares da página inicial vêm de public/testimonials
 const heroAvatar1 = "/testimonials/avatar-1.webp";
 const heroAvatar2 = "/testimonials/avatar-2.webp";
 const heroAvatar3 = "/testimonials/avatar-3.webp";
-import { useUtmParams } from "@/hooks/useUtmParams";
+import { LinkWithUtms } from "@/components/LinkWithUtms";
 
 // ✅ OTIMIZAÇÃO: Versão única 240p para carregamento INSTANTÂNEO (otimizado para mobile - 99% dos usuários)
 // Fallback para vídeo original se versão comprimida não existir
@@ -17,8 +15,6 @@ const heroVideoSources = {
 const heroPoster = '/images/collage-memories-new.webp';
 
 export default function HeroSection() {
-  const { navigateWithUtms } = useUtmParams();
-
   // ✅ CORREÇÃO MOBILE: Detectar dispositivo mobile uma vez
   const isMobileDevice = React.useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -44,35 +40,6 @@ export default function HeroSection() {
   });
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const mountedRef = React.useRef(true);
-
-  // Função para gerar links (apenas português)
-  const getLocalizedLink = (path: string) => path;
-
-  // ✅ CORREÇÃO PRODUÇÃO: Ref para prevenir cliques duplicados
-  const isNavigatingRef = React.useRef(false);
-  
-  // Navegação para quiz
-  const handleQuizClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // ✅ CORREÇÃO PRODUÇÃO: Prevenir cliques duplicados
-    if (isNavigatingRef.current) {
-      return;
-    }
-    
-    isNavigatingRef.current = true;
-    
-    // Preload agressivo do Quiz antes de redirecionar
-    import('../pages/Quiz').catch(() => {});
-    const quizPath = getLocalizedLink('/quiz');
-    navigateWithUtms(quizPath);
-    
-    // Resetar flag após navegação (fallback de segurança)
-    setTimeout(() => {
-      isNavigatingRef.current = false;
-    }, 1000);
-  };
 
   // ✅ OTIMIZAÇÃO: Listener para evento online (recarregar vídeo quando conexão voltar)
   React.useEffect(() => {
@@ -327,16 +294,16 @@ export default function HeroSection() {
         </h1>
         
         {/* Copy 2 Versões */}
-        <button
-          type="button"
-          onClick={handleQuizClick}
-          className="mb-3 p-2.5 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-lg border border-yellow-500/30 max-w-md mx-auto w-full cursor-pointer hover:brightness-[1.02] active:brightness-[0.98] transition"
+        <LinkWithUtms
+          to="/quiz"
+          id="cta_quiz_hero_promo"
+          className="block mb-3 p-2.5 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-lg border border-yellow-500/30 max-w-md mx-auto w-full cursor-pointer hover:brightness-[1.02] active:brightness-[0.98] transition"
         >
           <div className="flex items-center justify-center gap-2">
             <span className="text-lg sm:text-xl">🎁</span>
             <span className="font-bold text-sm sm:text-base">Pague 1, Leve 2 Versões</span>
           </div>
-        </button>
+        </LinkWithUtms>
 
         <p 
           className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-3 sm:mb-4 px-2 sm:px-4 leading-relaxed"
@@ -349,16 +316,15 @@ export default function HeroSection() {
         </p>
 
         <div className="flex justify-center items-center mb-4 sm:mb-6 px-2">
-          <Button
-            size="lg"
-            onClick={handleQuizClick}
+          <Button size="lg" asChild
             className="text-base sm:text-lg md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-2xl bg-primary hover:bg-primary-600 text-white shadow-soft hover:shadow-medium transition-all hover:scale-105 w-full sm:w-auto group btn-pulse"
           >
-            <span className="flex items-center justify-center gap-2 sm:gap-3">
-              {/* ✅ CORREÇÃO: Fallback para garantir texto sempre visível */}
-              <span>🎵 Criar Sua Música Aqui</span>
-              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
-            </span>
+            <LinkWithUtms to="/quiz" id="cta_quiz_hero_main">
+              <span className="flex items-center justify-center gap-2 sm:gap-3">
+                <span>🎵 Criar Sua Música Aqui</span>
+                <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </LinkWithUtms>
           </Button>
         </div>
 

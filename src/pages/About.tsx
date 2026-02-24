@@ -240,8 +240,9 @@ export default function About() {
                 Junte-se a mais de 1000 pessoas que já criaram momentos inesquecíveis com o MusicLovely.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link 
-                  to="/quiz" 
+                <Link
+                  to="/quiz"
+                  id="cta_quiz_about"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl hover:bg-primary-600 transition-colors"
                   onMouseEnter={() => {
                     // Preload agressivo do Quiz no hover

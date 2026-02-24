@@ -217,6 +217,8 @@ export default function Checkout() {
 
   // Sempre português - idiomas removidos
   const currentLanguage = 'pt';
+
+  const caktoBaseHref = getCaktoConfig().url;
   
   // ✅ Função helper para obter caminho do quiz (sempre sem prefixo)
   const getQuizPath = () => '/quiz';
@@ -2670,11 +2672,7 @@ export default function Checkout() {
 
                 {/* ✅ Botão acima dos planos (mobile only) */}
                 <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleCheckout(false);
-                  }}
+                  asChild
                   disabled={processing}
                   className={`w-full btn-pulse h-16 md:h-12 font-bold text-lg md:text-lg lg:text-xl ${
                     buttonError
@@ -2685,22 +2683,33 @@ export default function Checkout() {
                   } text-white shadow-lg ${buttonError ? 'shadow-red-800/40' : 'shadow-emerald-800/40'} hover:scale-105 transition-transform disabled:opacity-100 disabled:cursor-not-allowed md:hidden`}
                   size="lg"
                 >
-                  {processing ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
-                    </>
-                  ) : buttonError ? (
-                    <>
-                      <X className="mr-2 h-5 w-5" />
-                      {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
-                    </>
-                  ) : (
-                    <>
-                      <Gift className="mr-2 h-5 w-5" />
-                      {cameFromRestore && email && whatsapp ? '🚀 Pagar Agora' : t('checkout.createMyMusic')}
-                    </>
-                  )}
+                  <a
+                    href={caktoBaseHref}
+                    id="cta_payment_checkout_mobile"
+                    rel="nofollow noopener"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCheckout(false);
+                    }}
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
+                      </>
+                    ) : buttonError ? (
+                      <>
+                        <X className="mr-2 h-5 w-5" />
+                        {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="mr-2 h-5 w-5" />
+                        {cameFromRestore && email && whatsapp ? '🚀 Pagar Agora' : t('checkout.createMyMusic')}
+                      </>
+                    )}
+                  </a>
                 </Button>
 
                 {/* ✅ Planos sem card wrapper (mobile only) */}
@@ -2756,13 +2765,7 @@ export default function Checkout() {
                 {/* ✅ Botão para desktop */}
                 <div className="hidden md:block mt-4">
                   <Button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (!processing) {
-                        handleCheckout(false);
-                      }
-                    }}
+                    asChild
                     disabled={processing}
                     className={`w-full btn-pulse h-12 font-bold text-lg lg:text-xl ${
                       buttonError
@@ -2773,22 +2776,35 @@ export default function Checkout() {
                     } text-white shadow-lg ${buttonError ? 'shadow-red-800/40' : 'shadow-emerald-500/40'} hover:scale-105 transition-transform disabled:opacity-100 disabled:cursor-not-allowed`}
                     size="lg"
                   >
-                    {processing ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
-                      </>
-                    ) : buttonError ? (
-                      <>
-                        <X className="mr-2 h-5 w-5" />
-                        {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
-                      </>
-                    ) : (
-                      <>
-                        <Gift className="mr-2 h-5 w-5" />
-                        {cameFromRestore && email && whatsapp ? '🚀 Pagar Agora' : t('checkout.createMyMusic')}
-                      </>
-                    )}
+                    <a
+                      href={caktoBaseHref}
+                      id="cta_payment_checkout_desktop"
+                      rel="nofollow noopener"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!processing) {
+                          handleCheckout(false);
+                        }
+                      }}
+                    >
+                      {processing ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
+                        </>
+                      ) : buttonError ? (
+                        <>
+                          <X className="mr-2 h-5 w-5" />
+                          {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
+                        </>
+                      ) : (
+                        <>
+                          <Gift className="mr-2 h-5 w-5" />
+                          {cameFromRestore && email && whatsapp ? '🚀 Pagar Agora' : t('checkout.createMyMusic')}
+                        </>
+                      )}
+                    </a>
                   </Button>
                 </div>
 
@@ -3093,13 +3109,7 @@ export default function Checkout() {
       {/* ✅ Botão fixo na parte inferior (mobile only) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border shadow-2xl">
         <Button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!processing) {
-              handleCheckout(false);
-            }
-          }}
+          asChild
           disabled={processing}
           className={`w-full btn-pulse h-14 font-bold text-base ${
             buttonError
@@ -3108,22 +3118,35 @@ export default function Checkout() {
           } text-white shadow-lg ${buttonError ? 'shadow-red-800/40' : 'shadow-emerald-800/40'} hover:scale-105 transition-transform disabled:opacity-100 disabled:cursor-not-allowed`}
           size="lg"
         >
-          {processing ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
-            </>
-          ) : buttonError ? (
-            <>
-              <X className="mr-2 h-5 w-5" />
-              {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
-            </>
-          ) : (
-            <>
-              <Gift className="mr-2 h-5 w-5" />
-              {t('checkout.createMyMusic')}
-            </>
-          )}
+          <a
+            href={caktoBaseHref}
+            id="cta_payment_checkout_fixed"
+            rel="nofollow noopener"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!processing) {
+                handleCheckout(false);
+              }
+            }}
+          >
+            {processing ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                {retryCount > 0 ? `${t('checkout.trying')} (${retryCount}/2)` : t('checkout.processing')}
+              </>
+            ) : buttonError ? (
+              <>
+                <X className="mr-2 h-5 w-5" />
+                {!email && !whatsapp ? 'Preencha os campos acima' : !email ? 'Preencha o email' : 'Preencha o WhatsApp'}
+              </>
+            ) : (
+              <>
+                <Gift className="mr-2 h-5 w-5" />
+                {t('checkout.createMyMusic')}
+              </>
+            )}
+          </a>
         </Button>
       </div>
       

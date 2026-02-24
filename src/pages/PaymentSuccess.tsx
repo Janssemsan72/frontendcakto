@@ -267,16 +267,26 @@ export default function PaymentSuccess() {
           {/* Botão WhatsApp */}
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '0.8s' }}>
             <Button
-              onClick={handleWhatsAppClick}
+              asChild
               className="w-full hover:scale-[1.02] transition-all duration-300 text-white font-semibold shadow-md hover:shadow-xl rounded-xl py-3 sm:py-4 text-base sm:text-lg"
-              style={{ 
+              style={{
                 backgroundColor: '#22c55e',
                 border: 'none',
               }}
               disabled={loading}
             >
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
-              Falar no WhatsApp
+              <a
+                href={whatsappUrl}
+                id="cta_whatsapp_success"
+                rel="nofollow noopener noreferrer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleWhatsAppClick();
+                }}
+              >
+                <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+                Falar no WhatsApp
+              </a>
             </Button>
           </div>
 

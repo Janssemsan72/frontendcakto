@@ -195,13 +195,15 @@ export default function HowItWorks() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Link 
                   to={getLocalizedLink('/quiz')} 
+                  id="cta_quiz_howitworks_page"
                   className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-primary text-white rounded-xl sm:rounded-2xl hover:bg-primary-600 transition-colors text-base sm:text-lg font-semibold"
                 >
                   <Music className="h-4 w-4 sm:h-5 sm:w-5" />
                   Criar Minha Música Agora
                 </Link>
                 <a 
-                  href="/#pricing" 
+                  href="/#pricing"
+                  id="cta_pricing_howitworks"
                   className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 border border-primary text-primary rounded-xl sm:rounded-2xl hover:bg-primary/10 transition-colors text-base sm:text-lg font-semibold"
                 >
                   Ver Preços

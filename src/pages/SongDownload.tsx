@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useUtmParams } from '@/hooks/useUtmParams';
 import { useUtmifyTracking } from '@/hooks/useUtmifyTracking';
 import OptimizedImage from '@/components/OptimizedImage';
+import { LinkWithUtms } from '@/components/LinkWithUtms';
 
 export default function SongDownload() {
   const { id, token } = useParams();
@@ -447,14 +448,11 @@ export default function SongDownload() {
                   )}
                 </Button>
 
-                <Button
-                  onClick={() => navigateWithUtms(getHomePath())}
-                  className="w-full"
-                  variant="secondary"
-                  size="lg"
-                >
-                  <Home className="mr-2 h-4 w-4" />
-                  {t('songDownload.backHome') || 'Voltar para Home'}
+                <Button asChild className="w-full" variant="secondary" size="lg">
+                  <LinkWithUtms to="/" id="cta_home_songdownload">
+                    <Home className="mr-2 h-4 w-4" />
+                    {t('songDownload.backHome') || 'Voltar para Home'}
+                  </LinkWithUtms>
                 </Button>
               </div>
 
@@ -498,9 +496,11 @@ export default function SongDownload() {
               </p>
             )}
             <div className="flex flex-col gap-2">
-              <Button onClick={() => navigateWithUtms(getHomePath())} className="w-full" size="lg">
-                <Home className="mr-2 h-4 w-4" />
-                {t('songDownload.notFound.backHome') || 'Voltar para Home'}
+              <Button asChild className="w-full" size="lg">
+                <LinkWithUtms to="/" id="cta_home_songdownload_notfound">
+                  <Home className="mr-2 h-4 w-4" />
+                  {t('songDownload.notFound.backHome') || 'Voltar para Home'}
+                </LinkWithUtms>
               </Button>
               <Button 
                 onClick={() => window.history.back()} 

@@ -111,6 +111,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/"
+                      id="footer_link_home"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Início
@@ -119,6 +120,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/quiz"
+                      id="footer_link_quiz"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Criar Música
@@ -127,6 +129,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/#radiola"
+                      id="footer_link_radiola"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Ouça Exemplo
@@ -142,6 +145,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/#faq"
+                      id="footer_link_faq"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       FAQ
@@ -150,6 +154,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/#pricing"
+                      id="footer_link_pricing"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Preços
@@ -158,6 +163,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/terms"
+                      id="footer_link_terms"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Termos
@@ -166,6 +172,7 @@ export default function Footer() {
                   <li>
                     <LinkWithUtms
                       to="/privacy"
+                      id="footer_link_privacy"
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       Privacidade

@@ -94,7 +94,7 @@ export default function Pricing() {
                   import('../pages/Quiz').catch(() => {});
                 }}
               >
-                <LinkWithUtms to={getLocalizedLink('/quiz')}>{t('pricing.createMyMusic')}</LinkWithUtms>
+                <LinkWithUtms to={getLocalizedLink('/quiz')} id="cta_quiz_pricing_page">{t('pricing.createMyMusic')}</LinkWithUtms>
               </Button>
             </CardContent>
           </Card>

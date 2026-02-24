@@ -149,21 +149,6 @@ export default function Header() {
   const getLocalizedLink = (path: string) => path;
 
   // Handler para navegação para seções da página inicial
-  const handleSectionClick = (sectionId: string) => {
-    setMobileMenuOpen(false);
-    const scrollContainer = document.getElementById('main-scroll-container');
-    
-    // ✅ CORREÇÃO FAQ: Sempre atualizar a URL com o hash, mesmo na mesma página
-    // Isso garante que o hash seja preservado e o handleHash seja chamado
-    if (location.pathname === '/') {
-      // Atualizar a URL com o hash para que o useEffect de hashchange cuide do scroll
-      navigate(`/#${sectionId}`, { replace: true });
-    } else {
-      // Navega para a home e o hash vai acionar o scroll no useEffect
-      navigateWithUtms(`/#${sectionId}`);
-    }
-  };
-
   // Handler para clique no logo - sempre vai para o topo
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -216,15 +201,16 @@ export default function Header() {
         <div className="hidden md:flex items-center justify-center gap-6 sm:gap-8 absolute left-1/2 -translate-x-1/2">
           <nav className="flex items-center gap-6 sm:gap-8">
             {SECTIONS.map((section) => (
-              <button
+              <LinkWithUtms
                 key={section.id}
-                onClick={() => handleSectionClick(section.id)}
+                to={`/#${section.id}`}
+                id={`nav_${section.id}_desktop`}
                 className={`text-xl text-foreground/80 hover:text-foreground transition-colors font-medium ${
                   activeId === section.id ? 'text-primary' : ''
                 }`}
               >
                 {section.label}
-              </button>
+              </LinkWithUtms>
             ))}
           </nav>
         </div>
@@ -239,7 +225,7 @@ export default function Header() {
               import('../pages/Quiz').catch(() => {});
             }}
           >
-            <LinkWithUtms to={getLocalizedLink('/quiz')}>Criar Música</LinkWithUtms>
+            <LinkWithUtms to={getLocalizedLink('/quiz')} id="cta_quiz_header_desktop">Criar Música</LinkWithUtms>
           </Button>
         </div>
 
@@ -257,13 +243,15 @@ export default function Header() {
         <div className="md:hidden bg-background/95 backdrop-blur-md border-t border-border/50 animate-in slide-in-from-top-2 duration-200">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
             {SECTIONS.map((section) => (
-              <button
+              <LinkWithUtms
                 key={section.id}
-                onClick={() => handleSectionClick(section.id)}
-                className="text-xl text-foreground/80 hover:text-foreground transition-colors font-medium py-3 px-4 hover:bg-muted rounded-lg text-left"
+                to={`/#${section.id}`}
+                id={`nav_${section.id}_mobile`}
+                className="text-xl text-foreground/80 hover:text-foreground transition-colors font-medium py-3 px-4 hover:bg-muted rounded-lg text-left block"
+                onClick={() => setMobileMenuOpen(false)}
               >
                 {section.label}
-              </button>
+              </LinkWithUtms>
             ))}
             <Button
               className="bg-primary hover:bg-primary-600 text-white rounded-2xl shadow-soft w-full mt-2 text-base font-semibold py-2.5"
@@ -273,7 +261,7 @@ export default function Header() {
                 import('../pages/Quiz').catch(() => {});
               }}
             >
-              <LinkWithUtms to={getLocalizedLink('/quiz')} onClick={() => setMobileMenuOpen(false)}>
+              <LinkWithUtms to={getLocalizedLink('/quiz')} id="cta_quiz_header_mobile" onClick={() => setMobileMenuOpen(false)}>
                 Criar Música
               </LinkWithUtms>
             </Button>

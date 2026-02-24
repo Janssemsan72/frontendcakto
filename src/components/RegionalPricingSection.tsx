@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Globe, Lock, Star, Zap, Clock, Shield, Music, ArrowRight, Download } from '@/utils/iconImports';
-import { useUtmParams } from '@/hooks/useUtmParams';
-// formatDateTime removido - não é mais usado
+import { LinkWithUtms } from '@/components/LinkWithUtms';
 
 // ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
 const getCaktoConfig = () => {
@@ -38,7 +37,7 @@ interface RegionalPricing {
 
 export default function RegionalPricingSection() {
   const { t } = useTranslation();
-  const { navigateWithUtms } = useUtmParams();
+  
   const [pricing, setPricing] = useState<RegionalPricing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,23 +280,22 @@ export default function RegionalPricingSection() {
                   ))}
                 </div>
                 
-                <Button 
+                <Button
                   className="w-full bg-primary hover:bg-primary-600 text-white font-bold text-base py-3 rounded-xl shadow-soft hover:shadow-medium transition-all hover:scale-105 group"
                   size="lg"
-                  onMouseEnter={() => {
-                    // Preload agressivo do Quiz no hover
-                    import('../pages/Quiz').catch(() => {});
-                  }}
-                  onClick={() => {
-                    // Salvar session token para checkout
-                    localStorage.setItem('pricing_session_token', pricing.session_token);
-                    // Redirecionar para quiz
-                    navigateWithUtms('/quiz');
-                  }}
+                  asChild
                 >
-                  <Music className="h-5 w-5 mr-2" />
-                  <span>{t('pricing.createMyMusic')}</span>
-                  <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <LinkWithUtms
+                    to="/quiz"
+                    id={`cta_quiz_pricing_${plan.id}`}
+                    onClick={() => {
+                      localStorage.setItem('pricing_session_token', pricing.session_token);
+                    }}
+                  >
+                    <Music className="h-5 w-5 mr-2" />
+                    <span>{t('pricing.createMyMusic')}</span>
+                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </LinkWithUtms>
                 </Button>
                 
                 <div className="mt-4 text-center">
