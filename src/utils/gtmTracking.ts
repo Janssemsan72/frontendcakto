@@ -55,10 +55,11 @@ export function trackBeginCheckout(orderId: string, value: number, currency: str
   });
 }
 
-export function trackRedirectToPayment(orderId: string): void {
+export function trackRedirectToPayment(orderId: string, checkoutUrl?: string): void {
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
     payment_provider: 'cakto',
+    checkout_url: checkoutUrl || '',
   });
 }
 

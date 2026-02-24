@@ -2047,7 +2047,7 @@ export default function Checkout() {
             .eq('id', existingOrderId);
         } catch (_) {}
         saveGAClientIdForOrder(existingOrderId);
-        trackRedirectToPayment(existingOrderId);
+        trackRedirectToPayment(existingOrderId, finalRedirectUrl);
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
         return;
@@ -2375,7 +2375,7 @@ export default function Checkout() {
       });
       
       // ✅ GTM: Rastrear redirecionamento para pagamento
-      trackRedirectToPayment(orderId);
+      trackRedirectToPayment(orderId, redirectUrl);
 
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)
       window.location.href = redirectUrl;
