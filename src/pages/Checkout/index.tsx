@@ -25,6 +25,7 @@ import { sanitizeEmail } from '@/utils/sanitize';
 import { insertQuizWithRetry, type QuizPayload } from '@/utils/quizInsert';
 import { enqueueQuizToServer } from '@/utils/quizInsert';
 import { trackBeginCheckout, trackRedirectToPayment, getGAClientId, storeHashedUserData } from '@/utils/gtmTracking';
+import { LinkWithUtms } from '@/components/LinkWithUtms';
 import CheckoutHeader from './components/CheckoutHeader';
 import CheckoutForm from './components/CheckoutForm';
 import CheckoutSummary from './components/CheckoutSummary';
@@ -2916,13 +2917,11 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full text-base md:text-base py-5"
-                  onClick={() => navigateWithUtms(getQuizPath())}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  {t('checkout.reviewQuestionnaire')}
+                <Button asChild variant="outline" className="w-full text-base md:text-base py-5">
+                  <LinkWithUtms to={getQuizPath()} id="cta_quiz_checkout_review">
+                    <Edit className="mr-2 h-4 w-4" />
+                    {t('checkout.reviewQuestionnaire')}
+                  </LinkWithUtms>
                 </Button>
               </CardContent>
             </Card>

@@ -9,6 +9,7 @@ import { Loader2, CheckCircle2, XCircle } from '@/utils/iconImports';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { safeReload } from '@/utils/reload';
+import { Link } from 'react-router-dom';
 
 interface ProcessingStep {
   name: string;
@@ -63,9 +64,7 @@ export default function CheckoutProcessing() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const handleCancel = () => {
-    navigate('/checkout');
-  };
+  const checkoutPath = '/checkout';
 
   const handleRetry = () => {
     safeReload({ reason: 'CheckoutProcessing' });
@@ -123,15 +122,19 @@ export default function CheckoutProcessing() {
               <Button onClick={handleRetry} className="flex-1">
                 {t('checkoutProcessing.tryAgain')}
               </Button>
-              <Button onClick={handleCancel} variant="outline" className="flex-1">
-                {t('checkoutProcessing.back')}
+              <Button asChild variant="outline" className="flex-1">
+                <Link to={checkoutPath} id="cta_checkout_processing_back">
+                  {t('checkoutProcessing.back')}
+                </Link>
               </Button>
             </div>
           )}
 
           {!error && !timeoutReached && (
-            <Button onClick={handleCancel} variant="outline" className="w-full">
-              {t('checkoutProcessing.cancel')}
+            <Button asChild variant="outline" className="w-full">
+              <Link to={checkoutPath} id="cta_checkout_processing_cancel">
+                {t('checkoutProcessing.cancel')}
+              </Link>
             </Button>
           )}
         </CardContent>
