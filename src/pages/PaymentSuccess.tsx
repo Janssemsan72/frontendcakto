@@ -15,9 +15,24 @@ interface OrderData {
   status?: string;
 }
 
+const WHATSAPP_BASE = 'https://api.whatsapp.com/send/?phone=558594377151&text=Ol%C3%A1%21+Meu+pagamento+foi+processado.+Gostaria+de+acompanhar+o+status+do+meu+pedido.&type=phone_number&app_absent=0';
+
+function buildWhatsAppUrl(tracking: Record<string, string | undefined>): string {
+  const params = new URLSearchParams({
+    utm_source: tracking.utm_source ?? 'organic',
+    utm_campaign: tracking.utm_campaign ?? '',
+    utm_medium: tracking.utm_medium ?? '',
+    utm_content: tracking.utm_content ?? '',
+    utm_term: tracking.utm_term ?? '',
+    xcod: tracking.xcod ?? '',
+    sck: tracking.sck ?? '',
+  });
+  return `${WHATSAPP_BASE}&${params.toString()}`;
+}
+
 export default function PaymentSuccess() {
   // ✅ OTIMIZAÇÃO: Removido useTranslation não utilizado
-  const { utms, hasUtms } = useUtmParams();
+  const { utms, hasUtms, allTrackingParams } = useUtmParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(20);
@@ -27,8 +42,8 @@ export default function PaymentSuccess() {
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // URL do WhatsApp fixa conforme solicitado
-  const whatsappUrl = 'https://api.whatsapp.com/send/?phone=558594377151&text=Ol%C3%A1%21+Meu+pagamento+foi+processado.+Gostaria+de+acompanhar+o+status+do+meu+pedido.&type=phone_number&app_absent=0&utm_source=organic&utm_campaign=&utm_medium=&utm_content=&utm_term=&xcod=&sck=';
+  // URL do WhatsApp com sck e parâmetros de rastreamento reais
+  const whatsappUrl = buildWhatsAppUrl(allTrackingParams || {});
 
   // Preservar UTMs na página de sucesso
   useEffect(() => {

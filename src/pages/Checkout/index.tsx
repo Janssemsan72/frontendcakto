@@ -619,7 +619,7 @@ export default function Checkout() {
           
           if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
             logger.debug('Pedido encontrado, redirecionando para Cakto...');
-            const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+            const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
             if (redirectSuccess) {
               return; // Redirecionamento bem-sucedido, sair da função
             }
@@ -784,7 +784,7 @@ export default function Checkout() {
               // Continuar com fluxo normal se não conseguir buscar pedido
             } else if (orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
               logger.debug('Pedido encontrado, redirecionando para Cakto...');
-              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+              const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
               if (redirectSuccess) {
                 return; // Redirecionamento bem-sucedido, sair da função
               }
@@ -897,7 +897,7 @@ export default function Checkout() {
               });
               
               // SEMPRE tentar redirecionar se auto=true e pedido tem dados, independente da rota
-              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+              const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
               
               if (redirectSuccess) {
                 logger.debug('Redirecionamento para Cakto iniciado com sucesso');
@@ -1008,7 +1008,7 @@ export default function Checkout() {
               logger.debug('Quiz encontrado e pedido válido, redirecionando para Cakto...');
               const redirectSuccess = await redirectToCakto(
                 orderData, 
-                utms, 
+                allTrackingParams, 
                 quizData.language || 'pt'
               );
               
@@ -1066,7 +1066,7 @@ export default function Checkout() {
             
             if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
               logger.debug('Pedido encontrado, redirecionando para Cakto...');
-              const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+              const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
               if (redirectSuccess) {
                 return; // Redirecionamento bem-sucedido, sair da função
               }
@@ -1181,7 +1181,7 @@ export default function Checkout() {
               // Se auto=true, sempre tentar redirecionar
               if (auto === 'true') {
                 logger.debug('auto=true detectado, redirecionando para Cakto...');
-                const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+                const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
                 
                 if (redirectSuccess) {
                   logger.debug('Redirecionamento para Cakto iniciado com sucesso');
@@ -1275,7 +1275,7 @@ export default function Checkout() {
               
               if (orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
                 logger.debug('✅ [Checkout] Pedido encontrado no fallback, redirecionando para Cakto...');
-                const redirectSuccess = await redirectToCakto(orderData, utms, 'pt');
+                const redirectSuccess = await redirectToCakto(orderData, allTrackingParams, 'pt');
                 
                 if (redirectSuccess) {
                   logger.debug('✅ [Checkout] Redirecionamento para Cakto iniciado com sucesso após erro');
@@ -2298,13 +2298,13 @@ export default function Checkout() {
       console.log('🚀 [Checkout] REDIRECIONAMENTO FINAL para Cakto:', {
         hasUtmsInFinalUrl,
         utmsInFinalUrl,
-        utmsDisponivel: Object.keys(utms).length,
+        trackingParamsDisponivel: Object.keys(allTrackingParams).length,
         urlPreview: redirectUrl.substring(0, 250)
       });
       
-      if (!hasUtmsInFinalUrl && Object.keys(utms).length > 0) {
-        console.error('❌ [Checkout] ERRO CRÍTICO: UTMs disponíveis mas NÃO estão na URL!', {
-          utms,
+      if (!hasUtmsInFinalUrl && Object.keys(allTrackingParams).length > 0) {
+        console.error('❌ [Checkout] ERRO CRÍTICO: Parâmetros de tracking disponíveis mas NÃO estão na URL!', {
+          allTrackingParams,
           redirectUrl: redirectUrl.substring(0, 200)
         });
       }
