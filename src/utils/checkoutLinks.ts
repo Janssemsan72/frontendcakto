@@ -16,7 +16,7 @@ export function generateCaktoUrl(
   language: string = 'pt',
   utms?: Record<string, string>
 ): string {
-  const CAKTO_PAYMENT_URL = 'https://pay.cakto.com.br/d877u4t_665160';
+  const CAKTO_PAYMENT_URL = 'https://pay.hotmart.com/O103476976K';
   
   // Normalizar WhatsApp (apenas números)
   let normalizedWhatsapp = whatsapp.replace(/\D/g, '');
@@ -70,8 +70,8 @@ export function generateCaktoUrl(
   const finalUrl = `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
   
   // Validação e log da URL final
-  if (!finalUrl.startsWith('https://pay.cakto.com.br')) {
-    console.error('❌ [generateCaktoUrl] URL gerada não começa com https://pay.cakto.com.br:', finalUrl);
+  if (!finalUrl.startsWith('https://pay.hotmart.com')) {
+    console.error('❌ [generateCaktoUrl] URL gerada não começa com https://pay.hotmart.com:', finalUrl);
   } else {
     console.log('✅ [generateCaktoUrl] URL da Cakto gerada com sucesso:', {
       url: finalUrl,
