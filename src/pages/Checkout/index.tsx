@@ -518,8 +518,8 @@ export default function Checkout() {
         plan: selectedPlan as 'standard' | 'express',
         amount_cents: caktoConfig.amount_cents,
         status: 'pending' as const,
-        provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
-        payment_provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
+        provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
+        payment_provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
         customer_email: normEmail,
         customer_whatsapp: normWhatsapp,
         transaction_id: null,
@@ -2019,7 +2019,7 @@ export default function Checkout() {
         email: normalizedEmail,
         whatsapp: normalizedWhatsApp,
         plan: selectedPlan,
-        provider: 'cakto'
+        provider: 'hotmart'
       });
       
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -2031,7 +2031,7 @@ export default function Checkout() {
             customer_whatsapp: normalizedWhatsApp,
             plan: selectedPlan,
             amount_cents: amountCentsForRedirect,
-        provider: 'cakto',
+        provider: 'hotmart',
             transaction_id: transactionId
           };
           
@@ -2148,7 +2148,7 @@ export default function Checkout() {
         
         // PASSO 3: Criar pedido diretamente (fluxo antigo - como era antes)
         logger.debug('📦 [Checkout] Criando pedido diretamente no banco...', {
-          provider: 'cakto',
+          provider: 'hotmart',
           email: normalizedEmail,
           quiz_id: quizData.id
         });
@@ -2159,8 +2159,8 @@ export default function Checkout() {
           plan: selectedPlan as 'standard' | 'express',
           amount_cents: amountCentsForRedirect,
           status: 'pending' as const,
-          provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
-          payment_provider: 'cakto' as 'hotmart' | 'cakto' | 'stripe',
+          provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
+          payment_provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
           customer_email: normalizedEmail,
           customer_whatsapp: normalizedWhatsApp as string,
           transaction_id: transactionId || null,
@@ -2171,7 +2171,7 @@ export default function Checkout() {
           email: normalizedEmail.substring(0, 10) + '...',
           plan: selectedPlan,
           amount_cents: amountCentsForRedirect,
-          provider: 'cakto'
+          provider: 'hotmart'
         });
         
         const { data: orderData, error: orderError } = (await supabase
@@ -2219,7 +2219,7 @@ export default function Checkout() {
         logger.info('✅ [Checkout] Pedido criado com sucesso no banco!', {
           order_id: orderId,
           quiz_id: quizData.id,
-          provider: 'cakto',
+          provider: 'hotmart',
           status: orderData.status,
           customer_email: orderData.customer_email,
           customer_whatsapp: orderData.customer_whatsapp

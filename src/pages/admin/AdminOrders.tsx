@@ -497,7 +497,8 @@ export default function AdminOrders() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="stripe">Stripe</SelectItem>
-                <SelectItem value="cakto">Cakto</SelectItem>
+                <SelectItem value="hotmart">Hotmart</SelectItem>
+                <SelectItem value="cakto">Cakto (legado)</SelectItem>
                 <SelectItem value="mercadopago">Mercado Pago</SelectItem>
               </SelectContent>
             </Select>

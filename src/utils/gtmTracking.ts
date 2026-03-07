@@ -265,7 +265,7 @@ export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
-    payment_provider: 'cakto',
+    payment_provider: 'hotmart',
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
     value: value ?? 0,
     currency: currency || 'BRL',

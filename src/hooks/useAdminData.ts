@@ -10,7 +10,7 @@ import { sendReleaseWebhook } from '@/utils/webhook';
  */
 async function countOrdersPaginated(filters?: {
   status?: string;
-  provider?: 'stripe' | 'cakto';
+  provider?: 'stripe' | 'cakto' | 'hotmart';
   plan?: string;
 }): Promise<number> {
   // Primeiro tentar count exact
@@ -22,6 +22,8 @@ async function countOrdersPaginated(filters?: {
   
   if (filters?.provider === 'stripe') {
     query = query.or("payment_provider.eq.stripe,provider.eq.stripe");
+  } else if (filters?.provider === 'hotmart') {
+    query = query.or("payment_provider.eq.hotmart,provider.eq.hotmart");
   } else if (filters?.provider === 'cakto') {
     query = query.not("payment_provider", "eq", "stripe").not("provider", "eq", "stripe");
   }
@@ -53,6 +55,8 @@ async function countOrdersPaginated(filters?: {
     
     if (filters?.provider === 'stripe') {
       countQuery = countQuery.or("payment_provider.eq.stripe,provider.eq.stripe");
+    } else if (filters?.provider === 'hotmart') {
+      countQuery = countQuery.or("payment_provider.eq.hotmart,provider.eq.hotmart");
     } else if (filters?.provider === 'cakto') {
       countQuery = countQuery.not("payment_provider", "eq", "stripe").not("provider", "eq", "stripe");
     }
@@ -76,7 +80,7 @@ async function countOrdersPaginated(filters?: {
  * Função auxiliar para buscar receita via paginação (suporta milhões de registros)
  */
 async function fetchRevenuePaginated(filters?: {
-  provider?: 'stripe' | 'cakto';
+  provider?: 'stripe' | 'cakto' | 'hotmart';
 }): Promise<number> {
   let totalRevenue = 0;
   let from = 0;
@@ -91,6 +95,8 @@ async function fetchRevenuePaginated(filters?: {
     
     if (filters?.provider === 'stripe') {
       query = query.or("payment_provider.eq.stripe,provider.eq.stripe");
+    } else if (filters?.provider === 'hotmart') {
+      query = query.or("payment_provider.eq.hotmart,provider.eq.hotmart");
     } else if (filters?.provider === 'cakto') {
       query = query.not("payment_provider", "eq", "stripe").not("provider", "eq", "stripe");
     }
@@ -120,7 +126,7 @@ async function fetchRevenuePaginated(filters?: {
 }
 
 async function fetchRevenueAggregate(filters?: {
-  provider?: 'stripe' | 'cakto';
+  provider?: 'stripe' | 'cakto' | 'hotmart';
   plan?: string;
 }): Promise<number> {
   try {
@@ -148,6 +154,8 @@ async function fetchRevenueAggregate(filters?: {
       
       if (filters?.provider === 'stripe') {
         query = query.or("payment_provider.eq.stripe,provider.eq.stripe");
+      } else if (filters?.provider === 'hotmart') {
+        query = query.or("payment_provider.eq.hotmart,provider.eq.hotmart");
       } else if (filters?.provider === 'cakto') {
         query = query.not("payment_provider", "eq", "stripe").not("provider", "eq", "stripe");
       }
@@ -1503,19 +1511,19 @@ export function useOrdersStats(filters?: {
           // Contar via paginação (mais lento mas preciso)
           total = await countOrdersPaginated({
             status: filters?.status !== 'all' ? filters.status : undefined,
-            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto') : undefined,
+            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto' | 'hotmart') : undefined,
             plan: filters?.plan !== 'all' ? filters.plan : undefined
           });
           
           paid = await countOrdersPaginated({ 
             status: 'paid',
-            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto') : undefined,
+            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto' | 'hotmart') : undefined,
             plan: filters?.plan !== 'all' ? filters.plan : undefined
           });
           
           pending = await countOrdersPaginated({ 
             status: 'pending',
-            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto') : undefined,
+            provider: filters?.provider !== 'all' ? (filters.provider as 'stripe' | 'cakto' | 'hotmart') : undefined,
             plan: filters?.plan !== 'all' ? filters.plan : undefined
           });
         }
@@ -1562,7 +1570,7 @@ export function useOrdersStats(filters?: {
         } else if (hasProviderFilter && !hasPlanFilter) {
           // Apenas filtro de provider
           const providerRevenue = await fetchRevenueAggregate({
-            provider: filters.provider as 'stripe' | 'cakto'
+            provider: filters.provider as 'stripe' | 'cakto' | 'hotmart'
           });
           
           if (filters.provider === 'stripe') {
@@ -1574,7 +1582,7 @@ export function useOrdersStats(filters?: {
           const planValue = hasPlanFilter ? filters!.plan : undefined;
 
           if (hasProviderFilter) {
-            const provider = filters!.provider as 'stripe' | 'cakto';
+            const provider = filters!.provider as 'stripe' | 'cakto' | 'hotmart';
             const revenue = await fetchRevenueAggregate({ provider, plan: planValue });
             totalPaid = provider === 'stripe' ? revenue * 5.5 : revenue;
           } else {
