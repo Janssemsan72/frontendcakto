@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { EnhancedTabs, EnhancedTabsContent, EnhancedTabsList, EnhancedTabsTrigger } from "@/components/ui/enhanced-tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, RefreshCw, Search, Loader2, RotateCcw, Play, ChevronLeft, ChevronRight } from "@/utils/iconImports";
+import { CheckCircle, XCircle, Clock, RefreshCw, Search, Loader2, RotateCcw, Play, Pause, ChevronLeft, ChevronRight } from "@/utils/iconImports";
 import { useLyricsApprovals } from "@/hooks/useLyricsApprovals";
 import { LyricsCard } from "@/components/admin/LyricsCard";
 import { RegenerateAllProgressDialog } from "@/components/admin/RegenerateAllProgressDialog";
@@ -14,8 +14,13 @@ import { Input } from "@/components/ui/input";
 import { AdminPageLoading } from "@/components/admin/AdminPageLoading";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRegenerateAllLyrics } from "@/hooks/useRegenerateAllLyrics";
+import { useAdminAutoJobs, useAdminAutoJobRealtime, ADMIN_AUTO_JOB_TYPES } from "@/hooks/useAdminAutoJobs";
+import { useQueryClient } from "@tanstack/react-query";
+
+const LYRICS_QUERY_KEYS = { list: ["lyrics-approvals"], count: ["lyrics-approvals-count"] } as const;
 
 export default function AdminLyrics() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // ✅ OTIMIZAÇÃO: Debounce para reduzir filtros
@@ -38,6 +43,14 @@ export default function AdminLyrics() {
   // ✅ CORREÇÃO: Query adicional para buscar letras por email em todos os status quando houver busca
   const [searchResults, setSearchResults] = useState<LyricsApproval[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Aprovação automática: flag no backend; worker executa a cada 8s (independente da página aberta)
+  const {
+    isEnabled: isAutoApproveEnabled,
+    setEnabled: setAutoApproveEnabled,
+    isUpdating: isAutoApproveUpdating,
+  } = useAdminAutoJobs();
+  useAdminAutoJobRealtime();
 
   // ✅ PRIORIDADE: Hook para aprovações pendentes com paginação
   // Pendentes sempre carregam primeiro (sempre habilitado)
@@ -94,6 +107,53 @@ export default function AdminLyrics() {
     offset: (approvedPage - 1) * ITEMS_PER_PAGE,
     enabled: activeTab === "approved" // ✅ Só carregar dados quando tab estiver ativa
   });
+
+  // Refs para refetch: evita reexecutar o effect a cada render e manter intervalo estável de 8s
+  const refetchPendingRef = useRef(refetchPending);
+  const refetchApprovedRef = useRef(refetchApproved);
+  refetchPendingRef.current = refetchPending;
+  refetchApprovedRef.current = refetchApproved;
+
+  // Invalidar lista e contagem (para o badge "Pendentes" diminuir como ao clicar em Aprovar)
+  const invalidateLyricsQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: LYRICS_QUERY_KEYS.list });
+    queryClient.invalidateQueries({ queryKey: LYRICS_QUERY_KEYS.count });
+  }, [queryClient]);
+
+  // Fallback: com a página aberta e aprovação automática ativada, o frontend chama a Edge Function a cada 8s (funciona mesmo se o worker do backend não estiver rodando)
+  const autoApproveOn = isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS);
+  useEffect(() => {
+    if (!autoApproveOn) return;
+    const LYRICS_INTERVAL_MS = 8000;
+
+    const runOnce = () => {
+      supabase.functions
+        .invoke("run-one-auto-approve-lyrics", { body: {} })
+        .then(({ data, error }) => {
+          if (!error && data?.ok !== false) {
+            invalidateLyricsQueries();
+            refetchPendingRef.current?.();
+            refetchApprovedRef.current?.();
+          }
+          if (error && import.meta.env.DEV) {
+            console.warn("[Auto-approve] Erro na Edge Function:", error);
+            toast.error("Aprovação automática: falha na chamada. Verifique o console.");
+          }
+        })
+        .catch((err) => {
+          refetchPendingRef.current?.();
+          refetchApprovedRef.current?.();
+          if (import.meta.env.DEV) {
+            console.warn("[Auto-approve] Falha ao chamar run-one-auto-approve-lyrics:", err);
+            toast.error("Aprovação automática: falha (CORS/rede?). Verifique o console.");
+          }
+        });
+    };
+
+    runOnce();
+    const t = setInterval(runOnce, LYRICS_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [autoApproveOn, invalidateLyricsQueries]);
 
   // Hook para aprovações rejeitadas com paginação
   // ✅ OTIMIZAÇÃO: Só carregar dados quando a tab estiver ativa
@@ -588,6 +648,37 @@ export default function AdminLyrics() {
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
+          </Button>
+          <Button
+            onClick={async () => {
+              const jobType = ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS;
+              const next = !isAutoApproveEnabled(jobType);
+              try {
+                await setAutoApproveEnabled(jobType, next);
+                toast.success(next ? "Aprovação automática ativada (roda no servidor a cada 8s)." : "Aprovação automática desativada.");
+              } catch (e) {
+                toast.error("Erro ao alterar aprovação automática.");
+              }
+            }}
+            variant={isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "default" : "outline"}
+            size="sm"
+            className={`h-9 ${isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-600" : "border-orange-500/50 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20"}`}
+            disabled={isRegeneratingAll || isAutoApproveUpdating}
+            title={isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "Desativar para parar. Roda no servidor a cada 8 segundos (página pode estar fechada)." : "Ativar aprovação automática no servidor (a cada 8s). Desative pelo botão para parar."}
+          >
+            {isAutoApproveUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? (
+              <>
+                <Pause className="h-4 w-4 mr-2" />
+                Desativar aprovação automática {visiblePending.length > 0 && "(a cada 8s no servidor)"}
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Ativar aprovação automática
+              </>
+            )}
           </Button>
           {/* Botão para continuar progresso salvo */}
           {hasSavedProgress && regenerateProgress && !regenerateProgress.isComplete && !isRegeneratingAll && (

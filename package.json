@@ -19,7 +19,8 @@
     "validate:supabase": "node scripts/validate-supabase.js",
     "reprocess:cakto-failures": "node scripts/reprocess-cakto-failures.js",
     "setup:cakto-failures-table": "node scripts/setup-cakto-failures-table.js",
-    "cakto:setup-all": "node scripts/run-all-cakto-setup.js"
+    "cakto:setup-all": "node scripts/run-all-cakto-setup.js",
+    "worker": "node scripts/auto-jobs-worker.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.12",

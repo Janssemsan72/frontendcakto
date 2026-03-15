@@ -823,6 +823,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      admin_auto_jobs: {
+        Row: {
+          id: string;
+          job_type: string;
+          enabled: boolean;
+          updated_at: string;
+          updated_by: string | null;
+          last_run_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          job_type: string;
+          enabled?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+          last_run_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          job_type?: string;
+          enabled?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+          last_run_at?: string | null;
+        };
+        Relationships: [];
+      };
       /** Permite tabelas não declaradas - evita erros de tipo 'never' em tabelas dinâmicas */
       [key: string]: {
         Row: Record<string, unknown>;
@@ -871,3 +898,4 @@ export type RegionalPricing = Tables<'regional_pricing'>;
 export type AdminUser = Tables<'admin_users'>;
 export type Collaborator = Tables<'collaborators'>;
 export type Affiliate = Tables<'affiliates'>;
+export type AdminAutoJob = Tables<'admin_auto_jobs'>;

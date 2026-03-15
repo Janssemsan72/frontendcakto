@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Music, Calendar, Mail, AlertCircle, Trash2, RefreshCw, Send, Copy, Check, Loader2, Search, X } from "@/utils/iconImports";
+import { Music, Calendar, Mail, AlertCircle, Trash2, RefreshCw, Send, Copy, Check, Loader2, Search, X, Play, Pause } from "@/utils/iconImports";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmbeddedMusicPlayer } from "@/components/admin/EmbeddedMusicPlayer";
@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { sendReleaseWebhook } from "@/utils/webhook";
+import { useAdminAutoJobs, useAdminAutoJobRealtime, ADMIN_AUTO_JOB_TYPES } from "@/hooks/useAdminAutoJobs";
 
 export default function AdminReleases() {
   // ✅ OTIMIZAÇÃO: Usar React Query para cache automático
@@ -32,6 +33,32 @@ export default function AdminReleases() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   // ✅ NOVO: Rastrear cards que foram enviados para remover imediatamente
   const [sentOrderIds, setSentOrderIds] = useState<Set<string>>(new Set());
+
+  // Envio automático: flag no backend; worker executa a cada 4s (independente da página aberta)
+  const {
+    isEnabled: isAutoReleaseEnabled,
+    setEnabled: setAutoReleaseEnabled,
+    isUpdating: isAutoReleaseUpdating,
+  } = useAdminAutoJobs();
+  useAdminAutoJobRealtime();
+
+  // Ref para refetch: evita reexecutar o effect a cada render e manter intervalo estável de 4s
+  const refetchRef = useRef(refetch);
+  refetchRef.current = refetch;
+
+  // Fallback: com a página aberta e envio automático ativado, o próprio frontend chama a Edge Function a cada 4s (funciona mesmo se o worker do backend não estiver rodando)
+  const autoReleaseOn = isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE);
+  useEffect(() => {
+    if (!autoReleaseOn) return;
+    const RELEASE_INTERVAL_MS = 4000;
+    const t = setInterval(() => {
+      supabase.functions
+        .invoke("run-one-auto-release", { body: {} })
+        .then(() => refetchRef.current?.())
+        .catch(() => {});
+    }, RELEASE_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [autoReleaseOn]);
 
   // ✅ OTIMIZAÇÃO: React Query cuida do cache, apenas configurar realtime para updates
   useEffect(() => {
@@ -507,7 +534,6 @@ export default function AdminReleases() {
     return filtered;
   }, [orders, searchTerm, sentOrderIds]);
 
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -592,6 +618,48 @@ export default function AdminReleases() {
                   {filteredOrders.length} {filteredOrders.length === 1 ? 'pedido' : 'pedidos'}
                 </Badge>
               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? "default" : "outline"}
+                    size="sm"
+                    className={`h-8 shrink-0 ${isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-600" : ""}`}
+                    onClick={async () => {
+                      const jobType = ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE;
+                      const next = !isAutoReleaseEnabled(jobType);
+                      try {
+                        await setAutoReleaseEnabled(jobType, next);
+                        toast.success(next ? "Envio automático ativado (roda no servidor a cada 4s)." : "Envio automático desativado.");
+                      } catch {
+                        toast.error("Erro ao alterar envio automático.");
+                      }
+                    }}
+                    disabled={loading || isAutoReleaseUpdating}
+                    title={isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? "Desativar para parar. Roda no servidor a cada 4 segundos (página pode estar fechada)." : "Ativar envio automático no servidor (a cada 4s). Desative pelo botão para parar."}
+                    aria-label={isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? "Desativar envio automático" : "Ativar envio automático"}
+                  >
+                    {isAutoReleaseUpdating ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? (
+                      <>
+                        <Pause className="h-4 w-4 mr-1.5" />
+                        <span className="hidden sm:inline">Desativar envio automático</span>
+                        {filteredOrders.some((o) => (o.songs?.length ?? 0) >= 1) && (
+                          <span className="hidden sm:inline text-xs opacity-90"> (a cada 4s no servidor)</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-1.5" />
+                        <span className="hidden sm:inline">Ativar envio automático</span>
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isAutoReleaseEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_RELEASE) ? "Desativar envio automático (a cada 4s no servidor)" : "Ativar envio automático (a cada 4s no servidor)"}</p>
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
