@@ -11,7 +11,7 @@ import { LinkWithUtms } from '@/components/LinkWithUtms';
 // ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
 const getCaktoConfig = () => {
   return {
-    url: 'https://pay.cakto.com.br/d877u4t_665160',
+    url: 'https://pay.hotmart.com/O103476976K',
     amount_cents: 4790,
     price_display: 4790
   };

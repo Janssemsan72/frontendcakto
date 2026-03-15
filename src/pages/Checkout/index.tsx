@@ -115,23 +115,23 @@ type CheckoutOrderResponse = {
 // ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
 const getCaktoConfig = () => {
   return {
-    url: 'https://pay.cakto.com.br/d877u4t_665160',
+    url: 'https://pay.hotmart.com/O103476976K',
     amount_cents: 4790,
     price_display: 4790
   };
 };
 
 // ✅ Função para selecionar gateway de pagamento
-// SEMPRE retorna 'cakto' como método de pagamento padrão
+// SEMPRE retorna 'hotmart' como método de pagamento padrão
 const getPaymentGateway = () => {
   // Verificar variável de ambiente primeiro (permite override se necessário)
   const envGateway = import.meta.env.VITE_PAYMENT_GATEWAY;
-  if (envGateway === 'cakto') {
+  if (envGateway === 'hotmart') {
     return envGateway;
   }
   
-  // Sempre usar Cakto como padrão
-  return 'cakto';
+  // Sempre usar Hotmart como padrão
+  return 'hotmart';
 };
 
 // ✅ OTIMIZAÇÃO: Preload de recursos críticos antes do componente renderizar
@@ -153,7 +153,7 @@ export default function Checkout() {
   useEffect(() => {
     const link = document.createElement('link');
     link.rel = 'preconnect';
-    link.href = 'https://pay.cakto.com.br';
+    link.href = 'https://pay.hotmart.com';
     link.crossOrigin = 'anonymous';
     document.head.appendChild(link);
   }, []);
@@ -172,8 +172,8 @@ export default function Checkout() {
   const { allTrackingParams: utmsForRedirect } = useUtmParams();
   
   useEffect(() => {
-    if (messageId && orderId && !window.location.href.includes('pay.cakto.com.br') && !isRedirecting) {
-      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Cakto ANTES de processar...');
+    if (messageId && orderId && !window.location.href.includes('pay.hotmart.com') && !isRedirecting) {
+      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Hotmart ANTES de processar...');
       setIsRedirecting(true);
       
       // Buscar pedido e redirecionar IMEDIATAMENTE
@@ -336,7 +336,7 @@ export default function Checkout() {
       }
 
       // ✅ CORREÇÃO: Verificar se não estamos já na Cakto
-      if (window.location.hostname === 'pay.cakto.com.br') {
+      if (window.location.hostname === 'pay.hotmart.com') {
         logger.debug('redirectToCakto: Já estamos na Cakto, não redirecionar novamente');
         return true;
       }
@@ -555,7 +555,7 @@ export default function Checkout() {
       
       // ⚠️ CRÍTICO: Se a URL atual é da Cakto, não processar nada - deixar o navegador seguir naturalmente
       // Isso evita que o React Router intercepte URLs externas da Cakto
-      if (window.location.hostname === 'pay.cakto.com.br') {
+      if (window.location.hostname === 'pay.hotmart.com') {
         logger.debug('URL da Cakto detectada no useEffect principal - não processando lógica de checkout interno', {
           hostname: window.location.hostname,
           url: window.location.href
@@ -593,7 +593,7 @@ export default function Checkout() {
       logger.debug('Processando localStorage e URL...');
       
       // ⚠️ VERIFICAÇÃO ADICIONAL: Se a URL atual é da Cakto, não processar nada
-      if (window.location.hostname === 'pay.cakto.com.br') {
+      if (window.location.hostname === 'pay.hotmart.com') {
         logger.debug('URL da Cakto detectada em processLocalStorage - não processando');
         setLoading(false);
         return;
@@ -610,7 +610,7 @@ export default function Checkout() {
       
       // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Cakto
       // Isso evita que o React Router processe como checkout interno
-      if (messageId && orderId && !window.location.href.includes('pay.cakto.com.br')) {
+      if (messageId && orderId && !window.location.href.includes('pay.hotmart.com')) {
         logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando IMEDIATAMENTE para Cakto...');
         setLoading(true);
         
@@ -768,7 +768,7 @@ export default function Checkout() {
       
       // ✅ PRIORIDADE 0.5: Se restore=true E a URL NÃO é da Cakto, verificar se deve redirecionar para Cakto
       // ⚠️ CRÍTICO: Se a URL contém parâmetros do checkout interno mas deveria ir para Cakto, redirecionar
-      if (restore === 'true' && orderId && quizId && !window.location.href.includes('pay.cakto.com.br')) {
+      if (restore === 'true' && orderId && quizId && !window.location.href.includes('pay.hotmart.com')) {
         // Verificar se há message_id (indica que veio do WhatsApp)
         const messageId = urlParams.get('message_id');
         if (messageId || auto === 'true') {
@@ -1057,7 +1057,7 @@ export default function Checkout() {
       if (restore === 'true' && orderId && quizId) {
         const messageIdFromUrl = urlParams.get('message_id');
         // Se tem message_id, significa que veio do WhatsApp e deve ir direto para Cakto
-        if (messageIdFromUrl && !window.location.href.includes('pay.cakto.com.br')) {
+        if (messageIdFromUrl && !window.location.href.includes('pay.hotmart.com')) {
           logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando para Cakto...');
           setLoading(true);
           

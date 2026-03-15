@@ -47,7 +47,7 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
     const shouldRedirect = (
       (isCheckoutRoute && (messageId || hasCheckoutParams) && orderId) ||
       (isHomeRoute && messageId && orderId)
-    ) && !window.location.href.includes('pay.cakto.com.br');
+    ) && !window.location.href.includes('pay.hotmart.com');
     
     if (shouldRedirect) {
       // Buscar pedido e redirecionar IMEDIATAMENTE
@@ -60,7 +60,7 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
           .single();
 
           if (!error && orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-            const CAKTO_PAYMENT_URL = 'https://pay.cakto.com.br/d877u4t_665160';
+            const CAKTO_PAYMENT_URL = 'https://pay.hotmart.com/O103476976K';
             // ✅ CORREÇÃO: Remover sistema de locale - sempre usar português
             const locale = 'pt';
             

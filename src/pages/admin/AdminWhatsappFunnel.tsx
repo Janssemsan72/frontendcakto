@@ -1507,7 +1507,7 @@ export default function AdminWhatsappFunnel() {
           );
           
           // Validar URL gerada
-          if (!newCaktoUrl.startsWith('https://pay.cakto.com.br')) {
+          if (!newCaktoUrl.startsWith('https://pay.hotmart.com')) {
             throw new Error(`URL da Cakto gerada é inválida: ${newCaktoUrl.substring(0, 100)}`);
           }
           
@@ -1524,7 +1524,7 @@ export default function AdminWhatsappFunnel() {
       
       // ⚠️ VALIDAÇÃO FINAL: Verificar se URL da Cakto está correta antes de enviar
       if (linksResult.caktoUrl) {
-        if (!linksResult.caktoUrl.startsWith('https://pay.cakto.com.br')) {
+        if (!linksResult.caktoUrl.startsWith('https://pay.hotmart.com')) {
           throw new Error(`URL da Cakto retornada não é válida: ${linksResult.caktoUrl.substring(0, 100)}`);
         }
         
@@ -1960,7 +1960,7 @@ export default function AdminWhatsappFunnel() {
             );
             
             // Validar e salvar
-            if (newCaktoUrl.startsWith('https://pay.cakto.com.br')) {
+            if (newCaktoUrl.startsWith('https://pay.hotmart.com')) {
               await supabase
                 .from('orders')
                 .update({ cakto_payment_url: newCaktoUrl })
@@ -1979,7 +1979,7 @@ export default function AdminWhatsappFunnel() {
         
         // ⚠️ VALIDAÇÃO: Verificar se URL da Cakto está correta
         if (linksResult.caktoUrl) {
-          if (!linksResult.caktoUrl.startsWith('https://pay.cakto.com.br')) {
+          if (!linksResult.caktoUrl.startsWith('https://pay.hotmart.com')) {
             console.error(`❌ [AdminWhatsappFunnel] Funil ${f.id}: URL da Cakto inválida:`, linksResult.caktoUrl.substring(0, 100));
             throw new Error(`URL da Cakto inválida para funil ${f.id}`);
           }
@@ -2344,7 +2344,7 @@ export default function AdminWhatsappFunnel() {
                       if (order.cakto_payment_url) {
                         console.log('📝 URL da Cakto salva no banco:', {
                           url: order.cakto_payment_url,
-                          startsWithCakto: order.cakto_payment_url.startsWith('https://pay.cakto.com.br'),
+                          startsWithCakto: order.cakto_payment_url.startsWith('https://pay.hotmart.com'),
                           startsWithCheckout: order.cakto_payment_url.includes('musiclovely.com') && order.cakto_payment_url.includes('/checkout'),
                         });
                         
@@ -2367,16 +2367,16 @@ export default function AdminWhatsappFunnel() {
                       console.log('✅ URL gerada:', {
                         url: caktoUrl,
                         urlLength: caktoUrl.length,
-                        startsWithCakto: caktoUrl.startsWith('https://pay.cakto.com.br'),
+                        startsWithCakto: caktoUrl.startsWith('https://pay.hotmart.com'),
                         containsOrderId: caktoUrl.includes(order.id),
                         containsEmail: caktoUrl.includes(encodeURIComponent(order.customer_email)),
                         containsPhone: caktoUrl.includes(`phone=`), // ✅ CORREÇÃO: Verificar 'phone' ao invés de 'whatsapp'
                       });
                       
                       // Validar que a URL é da Cakto
-                      if (!caktoUrl.startsWith('https://pay.cakto.com.br')) {
+                      if (!caktoUrl.startsWith('https://pay.hotmart.com')) {
                         console.error('❌ [AdminWhatsappFunnel] URL inválida gerada:', caktoUrl);
-                        console.error('❌ [AdminWhatsappFunnel] URL não começa com https://pay.cakto.com.br');
+                        console.error('❌ [AdminWhatsappFunnel] URL não começa com https://pay.hotmart.com');
                         throw new Error(`URL inválida gerada: ${caktoUrl.substring(0, 100)}...`);
                       }
                       
