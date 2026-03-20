@@ -17,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { sendReleaseWebhook } from "@/utils/webhook";
+import { sendReleaseWebhook, sendN8nMusicReleased } from "@/utils/webhook";
 import { useAdminAutoJobs, useAdminAutoJobRealtime, ADMIN_AUTO_JOB_TYPES } from "@/hooks/useAdminAutoJobs";
 
 export default function AdminReleases() {
@@ -396,9 +396,21 @@ export default function AdminReleases() {
       console.log("📧 [AdminReleases] Enviando email com primeira música:", firstSong.id, "para pedido:", orderIdForEmail);
       
       try {
-        // Enviar email e webhook em paralelo
-        const [emailResult, webhookResult] = await Promise.allSettled([
-          // Enviar email
+        const orderPayload = orderData ? {
+          id: orderData.id,
+          customer_email: orderData.customer_email || '',
+          customer_whatsapp: orderData.customer_whatsapp || null,
+          plan: orderData.plan || 'unknown',
+          magic_token: orderData.magic_token || ''
+        } : null;
+        const songsPayload = songsToRelease.map(s => ({
+          id: s.id,
+          title: s.title || 'Música sem título',
+          variant_number: s.variant_number || 1,
+          audio_url: s.audio_url || undefined
+        }));
+        // Enviar email, webhook e n8n-webhook em paralelo
+        const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
           supabase.functions.invoke(
           'send-music-released-email', 
           { 
@@ -409,23 +421,8 @@ export default function AdminReleases() {
             } 
           }
           ),
-          // Enviar webhook (apenas se tiver dados do pedido)
-          orderData ? sendReleaseWebhook(
-            {
-              id: orderData.id,
-              customer_email: orderData.customer_email || '',
-              customer_whatsapp: orderData.customer_whatsapp || null,
-              plan: orderData.plan || 'unknown',
-              magic_token: orderData.magic_token || ''
-            },
-            songsToRelease.map(s => ({
-              id: s.id,
-              title: s.title || 'Música sem título',
-              variant_number: s.variant_number || 1,
-              audio_url: s.audio_url || undefined
-            })),
-            about
-          ) : Promise.resolve()
+          orderPayload ? sendReleaseWebhook(orderPayload, songsPayload, about) : Promise.resolve(),
+          orderPayload ? sendN8nMusicReleased(orderPayload, songsPayload, about) : Promise.resolve()
         ]);
         
         // Processar resultado do email
@@ -450,6 +447,9 @@ export default function AdminReleases() {
           console.log("✅ [AdminReleases] Webhook enviado com sucesso");
         } else {
           console.error("❌ [AdminReleases] Erro ao enviar webhook (não bloqueante):", webhookResult.reason);
+        }
+        if (n8nResult.status === 'rejected') {
+          console.error("❌ [AdminReleases] Erro ao enviar n8n-webhook (não bloqueante):", n8nResult.reason);
         }
       } catch (emailException: any) {
         console.error("❌ [AdminReleases] Exceção ao enviar email:", emailException);

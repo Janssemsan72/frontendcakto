@@ -16,7 +16,7 @@ import { OrderStatusBadge } from "@/components/admin/OrderStatusBadge";
 import { JobStatusBadge } from "@/components/admin/JobStatusBadge";
 import { SongStatusBadge } from "@/components/admin/SongStatusBadge";
 import { AdminPageLoading } from "@/components/admin/AdminPageLoading";
-import { sendReleaseWebhook } from "@/utils/webhook";
+import { sendReleaseWebhook, sendN8nMusicReleased } from "@/utils/webhook";
 
 interface OrderDetails {
   id: string;
@@ -929,31 +929,28 @@ export default function AdminOrderDetails() {
       // Obter dados do quiz para o webhook
       const about = (order.quizzes as any)?.about_who || 'N/A';
       
-      // ✅ NOVO: Enviar email e webhook em paralelo (igual ao botão "enviar de release")
-      const [emailResult, webhookResult] = await Promise.allSettled([
-        // Enviar email
+      const orderPayload = {
+        id: order.id,
+        customer_email: order.customer_email || '',
+        customer_whatsapp: order.customer_whatsapp || null,
+        plan: order.plan || 'unknown',
+        magic_token: order.magic_token || ''
+      };
+      const songsPayload = songsWithAudio.map(s => ({
+        id: s.id,
+        title: s.title || 'Música sem título',
+        variant_number: s.variant_number || 1,
+        audio_url: s.audio_url || undefined
+      }));
+      // ✅ NOVO: Enviar email, webhook e n8n-webhook em paralelo
+      const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
         supabase.functions.invoke(edgeFunction, {
           body: songsReleased.length > 0 
             ? { songId, orderId: order.id, force: true } // Para released, precisa de songId e force
             : { order_id: order.id } // Para ready, precisa de order_id
         }),
-        // Enviar webhook (apenas se tiver dados do pedido)
-        sendReleaseWebhook(
-          {
-            id: order.id,
-            customer_email: order.customer_email || '',
-            customer_whatsapp: order.customer_whatsapp || null,
-            plan: order.plan || 'unknown',
-            magic_token: order.magic_token || ''
-          },
-          songsWithAudio.map(s => ({
-            id: s.id,
-            title: s.title || 'Música sem título',
-            variant_number: s.variant_number || 1,
-            audio_url: s.audio_url || undefined
-          })),
-          about
-        )
+        sendReleaseWebhook(orderPayload, songsPayload, about),
+        sendN8nMusicReleased(orderPayload, songsPayload, about)
       ]);
       
       // Processar resultado do email
@@ -976,6 +973,9 @@ export default function AdminOrderDetails() {
       // Processar resultado do webhook (não bloqueante)
       if (webhookResult.status === 'rejected') {
         console.error("Erro ao enviar webhook (não bloqueante):", webhookResult.reason);
+      }
+      if (n8nResult.status === 'rejected') {
+        console.error("Erro ao enviar n8n-webhook (não bloqueante):", n8nResult.reason);
       }
 
       toast.success(

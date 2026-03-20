@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { LyricsApproval, LyricsStatus } from "@/types/admin";
 import { getDeviceInfo } from "@/utils/detection/deviceDetection";
 import { logger } from "@/utils/logger";
+import { sendN8nLyricsApproved } from "@/utils/webhook";
 
 // Verificar se está em desenvolvimento
 const isDev = import.meta.env.DEV;
@@ -385,7 +386,7 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
                   // Buscar a lyrics_approval associada a este job
                   const { data: approval, error: approvalError } = await supabase
                     .from('lyrics_approvals')
-                    .select('id, status')
+                    .select('id, status, order_id')
                     .eq('job_id', newJob.id)
                     .eq('status', 'pending')
                     .maybeSingle();
@@ -413,7 +414,10 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
                         approval_id: approval.id,
                         job_id: newJob.id
                       });
-                      
+                      // Enviar evento para n8n-webhook (não bloqueante)
+                      sendN8nLyricsApproved(approval.id, approval.order_id ?? undefined).catch((err) =>
+                        logger.error('Erro ao enviar n8n-webhook lyrics_approved', err)
+                      );
                       // Invalidar queries para atualizar as listas
                       queryClientRef.current.invalidateQueries({ 
                         queryKey: ["lyrics-approvals"],
@@ -541,6 +545,10 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
       }
     },
     onSuccess: (data, approvalId) => {
+      // Enviar evento para n8n-webhook (aprovação manual; não bloqueante)
+      sendN8nLyricsApproved(approvalId).catch((err) =>
+        logger.error('Erro ao enviar n8n-webhook lyrics_approved (manual)', err)
+      );
       // ✅ CORREÇÃO: Aguardar delay suficiente para garantir que o toast de sucesso apareça primeiro
       // O card só desaparecerá após a mensagem de sucesso aparecer e ser visível
       setTimeout(() => {

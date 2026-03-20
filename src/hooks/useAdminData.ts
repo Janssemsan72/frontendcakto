@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, queryClient } from '@/lib/queryClient';
 import { supabase, isSupabaseReady } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { sendReleaseWebhook } from '@/utils/webhook';
+import { sendReleaseWebhook, sendN8nMusicReleased } from '@/utils/webhook';
 
 /**
  * Função auxiliar para contar pedidos via paginação (suporta milhões de registros)
@@ -2067,28 +2067,28 @@ export function useReleaseMutation() {
             setTimeout(() => reject(new Error('Timeout: Envio de email demorou mais de 15 segundos')), 15000)
           );
           
-          // Chamar webhook em paralelo (não bloqueante)
-          const webhookPromise = order ? sendReleaseWebhook(
-            {
-              id: orderIdForEmail,
-              customer_email: order.customer_email || '',
-              customer_whatsapp: order.customer_whatsapp || null,
-              plan: order.plan || 'unknown',
-              magic_token: order.magic_token || ''
-            },
-            songsToRelease.map(s => ({
-              id: s.id,
-              title: s.title || 'Música sem título',
-              variant_number: s.variant_number || 1,
-              audio_url: s.audio_url || undefined
-            })),
-            about
-          ) : Promise.resolve();
+          // Chamar webhook e n8n-webhook em paralelo (não bloqueante)
+          const orderPayload = order ? {
+            id: orderIdForEmail,
+            customer_email: order.customer_email || '',
+            customer_whatsapp: order.customer_whatsapp || null,
+            plan: order.plan || 'unknown',
+            magic_token: order.magic_token || ''
+          } : null;
+          const songsPayload = songsToRelease.map(s => ({
+            id: s.id,
+            title: s.title || 'Música sem título',
+            variant_number: s.variant_number || 1,
+            audio_url: s.audio_url || undefined
+          }));
+          const webhookPromise = orderPayload ? sendReleaseWebhook(orderPayload, songsPayload, about) : Promise.resolve();
+          const n8nPromise = orderPayload ? sendN8nMusicReleased(orderPayload, songsPayload, about) : Promise.resolve();
           
-          // Executar email e webhook em paralelo
-          const [emailResult, webhookResult] = await Promise.allSettled([
+          // Executar email, webhook e n8n-webhook em paralelo
+          const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
             Promise.race([emailPromise, emailTimeout]),
-            webhookPromise
+            webhookPromise,
+            n8nPromise
           ]);
           
           // Processar resultado do email
@@ -2104,6 +2104,9 @@ export function useReleaseMutation() {
           // Processar resultado do webhook (não bloquear)
           if (webhookResult.status === 'rejected') {
             console.error('❌ [Release] [Webhook] Erro ao enviar webhook (não bloqueante):', webhookResult.reason);
+          }
+          if (n8nResult.status === 'rejected') {
+            console.error('❌ [Release] [n8n-webhook] Erro ao enviar n8n-webhook (não bloqueante):', n8nResult.reason);
           }
         
         if (emailError) {

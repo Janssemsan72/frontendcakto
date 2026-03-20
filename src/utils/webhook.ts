@@ -309,3 +309,68 @@ export async function sendLyricsPendingWebhook(
   }
 }
 
+/**
+ * Invoca a Edge Function n8n-webhook para evento de letra aprovada.
+ * Não bloqueia o fluxo; erros são apenas logados.
+ */
+export async function sendN8nLyricsApproved(
+  approvalId: string,
+  orderId?: string
+): Promise<void> {
+  try {
+    const body = {
+      type: 'lyrics_approved',
+      approval_id: approvalId,
+      order_id: orderId ?? null,
+    };
+    console.log(`📤 [n8n-webhook] Enviando lyrics_approved - approval_id: ${approvalId}`);
+    const { error } = await supabase.functions.invoke('n8n-webhook', { body });
+    if (error) {
+      console.error(`❌ [n8n-webhook] Erro ao enviar lyrics_approved:`, error);
+      return;
+    }
+    console.log(`✅ [n8n-webhook] lyrics_approved enviado para approval ${approvalId}`);
+  } catch (err: any) {
+    console.error(`❌ [n8n-webhook] Exceção ao enviar lyrics_approved:`, err?.message ?? err);
+  }
+}
+
+/**
+ * Invoca a Edge Function n8n-webhook para evento de música liberada.
+ * Não bloqueia o fluxo; erros são apenas logados.
+ */
+export async function sendN8nMusicReleased(
+  order: Order,
+  songs: Song[],
+  about: string
+): Promise<void> {
+  try {
+    const downloadUrls = await Promise.all(songs.map((s) => generateDownloadUrl(s)));
+    const songsWithUrls = songs.map((song, index) => ({
+      id: song.id,
+      title: song.title || 'Música sem título',
+      variant_number: song.variant_number,
+      download_url: downloadUrls[index] || null,
+    }));
+    const body = {
+      type: 'music_released',
+      order_id: order.id,
+      email: order.customer_email,
+      phone: order.customer_whatsapp || null,
+      songs: songsWithUrls,
+      about: about || 'N/A',
+      plan: order.plan || 'unknown',
+      magic_token: order.magic_token || '',
+    };
+    console.log(`📤 [n8n-webhook] Enviando music_released - order_id: ${order.id}, songs: ${songs.length}`);
+    const { error } = await supabase.functions.invoke('n8n-webhook', { body });
+    if (error) {
+      console.error(`❌ [n8n-webhook] Erro ao enviar music_released:`, error);
+      return;
+    }
+    console.log(`✅ [n8n-webhook] music_released enviado para order ${order.id}`);
+  } catch (err: any) {
+    console.error(`❌ [n8n-webhook] Exceção ao enviar music_released:`, err?.message ?? err);
+  }
+}
+
