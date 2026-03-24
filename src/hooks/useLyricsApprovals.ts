@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { LyricsApproval, LyricsStatus } from "@/types/admin";
 import { getDeviceInfo } from "@/utils/detection/deviceDetection";
 import { logger } from "@/utils/logger";
-import { sendN8nLyricsApproved } from "@/utils/webhook";
+import {
+  sendLyricsPendingWebhook,
+  sendN8nLyricsApproved,
+} from "@/utils/webhook";
 
 // Verificar se está em desenvolvimento
 const isDev = import.meta.env.DEV;
@@ -15,6 +18,30 @@ let sharedChannelSubscribers = 0;
 let globalInvalidationTimeout: NodeJS.Timeout | null = null;
 let globalLastInvalidation = 0;
 const GLOBAL_DEBOUNCE_MS = 3000; // ✅ CORREÇÃO: Debounce global de 3 segundos para evitar loops
+
+/** Dispara webhook Automaeia quando uma letra entra como pendente (Realtime). */
+async function notifyLyricsPendingWebhookForOrder(
+  orderId: string | null | undefined
+): Promise<void> {
+  if (!orderId) return;
+  const { data: ord, error } = await supabase
+    .from("orders")
+    .select("customer_email, customer_whatsapp")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (error) {
+    logger.warn("[lyrics_pending webhook] Falha ao buscar pedido", { orderId, error });
+  }
+  try {
+    await sendLyricsPendingWebhook(
+      orderId,
+      ord?.customer_email ?? "",
+      ord?.customer_whatsapp ?? null
+    );
+  } catch (e) {
+    logger.error("[lyrics_pending webhook] Envio falhou", e, { orderId });
+  }
+}
 
 interface UseLyricsApprovalsOptions {
   status?: LyricsStatus[];
@@ -286,6 +313,10 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
               approval_id: payload.new?.id,
               order_id: payload.new?.order_id
             });
+
+            void notifyLyricsPendingWebhookForOrder(
+              payload.new?.order_id as string | undefined
+            );
             
             // Invalidar todas as queries relacionadas (incluindo contagem)
             queryClientRef.current.invalidateQueries({ 
@@ -320,6 +351,11 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
               approval_id: payload.new?.id,
               order_id: payload.new?.order_id
             });
+
+            void notifyLyricsPendingWebhookForOrder(
+              payload.new?.order_id as string | undefined
+            );
+
             queryClientRef.current.invalidateQueries({ 
               queryKey: ["lyrics-approvals"],
               refetchType: 'active'
@@ -414,9 +450,9 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
                         approval_id: approval.id,
                         job_id: newJob.id
                       });
-                      // Enviar evento para n8n-webhook (não bloqueante)
+                      // Automaeia lyrics_approved (não bloqueante)
                       sendN8nLyricsApproved(approval.id, approval.order_id ?? undefined).catch((err) =>
-                        logger.error('Erro ao enviar n8n-webhook lyrics_approved', err)
+                        logger.error('Erro ao enviar webhook lyrics_approved (Automaeia)', err)
                       );
                       // Invalidar queries para atualizar as listas
                       queryClientRef.current.invalidateQueries({ 
@@ -499,7 +535,8 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
 
   // Mutation para aprovar letras
   const approveMutation = useMutation({
-    mutationFn: async (approvalId: string) => {
+    mutationFn: async (vars: { approvalId: string; orderId?: string | null }) => {
+      const { approvalId } = vars;
       try {
         // Verificar se o cliente Supabase está inicializado corretamente
         if (!supabase || !supabase.functions) {
@@ -544,10 +581,11 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
         throw error;
       }
     },
-    onSuccess: (data, approvalId) => {
-      // Enviar evento para n8n-webhook (aprovação manual; não bloqueante)
-      sendN8nLyricsApproved(approvalId).catch((err) =>
-        logger.error('Erro ao enviar n8n-webhook lyrics_approved (manual)', err)
+    onSuccess: (data, vars) => {
+      const { approvalId, orderId } = vars;
+      // Automaeia lyrics_approved (aprovação manual; não bloqueante)
+      sendN8nLyricsApproved(approvalId, orderId ?? undefined).catch((err) =>
+        logger.error('Erro ao enviar webhook lyrics_approved manual (Automaeia)', err)
       );
       // ✅ CORREÇÃO: Aguardar delay suficiente para garantir que o toast de sucesso apareça primeiro
       // O card só desaparecerá após a mensagem de sucesso aparecer e ser visível

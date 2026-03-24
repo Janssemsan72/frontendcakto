@@ -40,7 +40,7 @@ const mapVocalGenderToVoice = (vocalGender: string | null | undefined): string =
 
 interface LyricsCardProps {
   approval: LyricsApproval;
-  onApprove?: (id: string) => void;
+  onApprove?: (id: string, orderId?: string | null) => void;
   onReject?: (id: string, reason: string) => void;
   onUnapprove?: (id: string) => void;
   onRegenerate?: (id: string) => void;
@@ -953,7 +953,7 @@ export const LyricsCard = memo(function LyricsCard({
             {/* Linha 2: Aprovar, Reprovar */}
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => onApprove?.(approval.id)}
+                onClick={() => onApprove?.(approval.id, approval.order_id)}
                 disabled={isApproving || !onApprove}
                 className="h-7 px-2.5 text-[11px] font-medium bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center gap-1 transition-colors rounded-lg disabled:opacity-50"
               >

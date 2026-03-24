@@ -16,7 +16,7 @@ import { OrderStatusBadge } from "@/components/admin/OrderStatusBadge";
 import { JobStatusBadge } from "@/components/admin/JobStatusBadge";
 import { SongStatusBadge } from "@/components/admin/SongStatusBadge";
 import { AdminPageLoading } from "@/components/admin/AdminPageLoading";
-import { sendReleaseWebhook, sendN8nMusicReleased } from "@/utils/webhook";
+import { sendReleaseWebhook } from "@/utils/webhook";
 
 interface OrderDetails {
   id: string;
@@ -942,15 +942,15 @@ export default function AdminOrderDetails() {
         variant_number: s.variant_number || 1,
         audio_url: s.audio_url || undefined
       }));
-      // ✅ NOVO: Enviar email, webhook e n8n-webhook em paralelo
-      const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
+      const [emailResult, webhookResult] = await Promise.allSettled([
         supabase.functions.invoke(edgeFunction, {
           body: songsReleased.length > 0 
             ? { songId, orderId: order.id, force: true } // Para released, precisa de songId e force
             : { order_id: order.id } // Para ready, precisa de order_id
         }),
-        sendReleaseWebhook(orderPayload, songsPayload, about),
-        sendN8nMusicReleased(orderPayload, songsPayload, about)
+        sendReleaseWebhook(orderPayload, songsPayload, about, {
+          allOrderIds: [order.id],
+        }),
       ]);
       
       // Processar resultado do email
@@ -974,10 +974,6 @@ export default function AdminOrderDetails() {
       if (webhookResult.status === 'rejected') {
         console.error("Erro ao enviar webhook (não bloqueante):", webhookResult.reason);
       }
-      if (n8nResult.status === 'rejected') {
-        console.error("Erro ao enviar n8n-webhook (não bloqueante):", n8nResult.reason);
-      }
-
       toast.success(
         <div>
           <p className="font-semibold">✅ Email e webhook reenviados com sucesso!</p>

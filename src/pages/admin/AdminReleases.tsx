@@ -17,8 +17,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { sendReleaseWebhook, sendN8nMusicReleased } from "@/utils/webhook";
-import { useAdminAutoJobs, useAdminAutoJobRealtime, ADMIN_AUTO_JOB_TYPES } from "@/hooks/useAdminAutoJobs";
+import { sendReleaseWebhook } from "@/utils/webhook";
+import {
+  useAdminAutoJobs,
+  useAdminAutoJobRealtime,
+  ADMIN_AUTO_JOB_TYPES,
+} from "@/hooks/useAdminAutoJobs";
 
 export default function AdminReleases() {
   // ✅ OTIMIZAÇÃO: Usar React Query para cache automático
@@ -150,7 +154,7 @@ export default function AdminReleases() {
       console.log("🔍 [AdminReleases] Buscando músicas para pedidos:", orderIdsArray);
       const { data: songs, error: fetchError } = await supabase
         .from('songs')
-        .select('id, variant_number, title, audio_url, status, order_id, released_at')
+        .select('id, variant_number, title, audio_url, status, order_id, released_at, created_at')
         .in('order_id', orderIdsArray) // ✅ Buscar de todos os pedidos
         .eq('status', 'ready') // ✅ Apenas músicas prontas
         .is('released_at', null) // ✅ Apenas não liberadas
@@ -170,7 +174,7 @@ export default function AdminReleases() {
         // Buscar todas as músicas dos pedidos para debug
         const { data: allSongs, error: allSongsError } = await supabase
           .from('songs')
-          .select('id, variant_number, title, audio_url, status, order_id, released_at')
+          .select('id, variant_number, title, audio_url, status, order_id, released_at, created_at')
           .in('order_id', orderIdsArray)
           .order('variant_number', { ascending: true });
         
@@ -396,21 +400,21 @@ export default function AdminReleases() {
       console.log("📧 [AdminReleases] Enviando email com primeira música:", firstSong.id, "para pedido:", orderIdForEmail);
       
       try {
-        const orderPayload = orderData ? {
-          id: orderData.id,
-          customer_email: orderData.customer_email || '',
-          customer_whatsapp: orderData.customer_whatsapp || null,
-          plan: orderData.plan || 'unknown',
-          magic_token: orderData.magic_token || ''
-        } : null;
+        // Sempre montar payload mínimo (igual useAdminData): webhook Automaeia mesmo se a query do pedido falhar
+        const orderPayload = {
+          id: orderData?.id ?? orderIdForEmail,
+          customer_email: orderData?.customer_email || '',
+          customer_whatsapp: orderData?.customer_whatsapp ?? null,
+          plan: orderData?.plan || 'unknown',
+          magic_token: orderData?.magic_token || '',
+        };
         const songsPayload = songsToRelease.map(s => ({
           id: s.id,
           title: s.title || 'Música sem título',
           variant_number: s.variant_number || 1,
           audio_url: s.audio_url || undefined
         }));
-        // Enviar email, webhook e n8n-webhook em paralelo
-        const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
+        const [emailResult, webhookResult] = await Promise.allSettled([
           supabase.functions.invoke(
           'send-music-released-email', 
           { 
@@ -421,8 +425,9 @@ export default function AdminReleases() {
             } 
           }
           ),
-          orderPayload ? sendReleaseWebhook(orderPayload, songsPayload, about) : Promise.resolve(),
-          orderPayload ? sendN8nMusicReleased(orderPayload, songsPayload, about) : Promise.resolve()
+          sendReleaseWebhook(orderPayload, songsPayload, about, {
+            allOrderIds: orderIdsArray,
+          }),
         ]);
         
         // Processar resultado do email
@@ -442,14 +447,10 @@ export default function AdminReleases() {
           toast.warning(`Músicas liberadas, mas houve erro ao enviar email: ${emailResult.reason?.message || 'Erro desconhecido'}`);
         }
 
-        // Processar resultado do webhook (apenas log, não mostrar toast)
         if (webhookResult.status === 'fulfilled') {
-          console.log("✅ [AdminReleases] Webhook enviado com sucesso");
+          console.log("✅ [AdminReleases] Webhook Automaeia (music_released) enviado");
         } else {
-          console.error("❌ [AdminReleases] Erro ao enviar webhook (não bloqueante):", webhookResult.reason);
-        }
-        if (n8nResult.status === 'rejected') {
-          console.error("❌ [AdminReleases] Erro ao enviar n8n-webhook (não bloqueante):", n8nResult.reason);
+          console.error("❌ [AdminReleases] Webhook Automaeia (não bloqueante):", webhookResult.reason);
         }
       } catch (emailException: any) {
         console.error("❌ [AdminReleases] Exceção ao enviar email:", emailException);
@@ -840,7 +841,7 @@ export default function AdminReleases() {
                             console.log('🚀 [AdminReleases] Order IDs para release:', order.order_ids);
                             console.log('🚀 [AdminReleases] Songs count:', songsCount);
                             console.log('🚀 [AdminReleases] Songs disponíveis:', order.songs?.map((s: any) => ({ id: s.id, title: s.title })));
-                            
+
                             // ✅ CORREÇÃO CRÍTICA: Passar músicas pré-carregadas para evitar query lenta
                             console.log('🚀 [AdminReleases] Chamando releaseMutation.mutateAsync...');
                             console.log('🚀 [AdminReleases] Passando músicas pré-carregadas:', order.songs?.length || 0);

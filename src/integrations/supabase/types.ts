@@ -890,6 +890,7 @@ export type Quiz = Tables<'quizzes'>;
 export type Order = Tables<'orders'>;
 export type Song = Tables<'songs'>;
 export type LyricsApproval = Tables<'lyrics_approvals'>;
+export type AdminAutoJob = Tables<'admin_auto_jobs'>;
 export type EmailLog = Tables<'email_logs'>;
 export type EmailTemplate = Tables<'email_templates'>;
 export type Testimonial = Tables<'testimonials'>;

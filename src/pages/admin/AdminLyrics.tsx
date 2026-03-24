@@ -14,10 +14,17 @@ import { Input } from "@/components/ui/input";
 import { AdminPageLoading } from "@/components/admin/AdminPageLoading";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRegenerateAllLyrics } from "@/hooks/useRegenerateAllLyrics";
-import { useAdminAutoJobs, useAdminAutoJobRealtime, ADMIN_AUTO_JOB_TYPES } from "@/hooks/useAdminAutoJobs";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  useAdminAutoJobs,
+  useAdminAutoJobRealtime,
+  ADMIN_AUTO_JOB_TYPES,
+} from "@/hooks/useAdminAutoJobs";
 
-const LYRICS_QUERY_KEYS = { list: ["lyrics-approvals"], count: ["lyrics-approvals-count"] } as const;
+const LYRICS_QUERY_KEYS = {
+  list: ["lyrics-approvals"],
+  count: ["lyrics-approvals-count"],
+} as const;
 
 export default function AdminLyrics() {
   const queryClient = useQueryClient();
@@ -44,7 +51,7 @@ export default function AdminLyrics() {
   const [searchResults, setSearchResults] = useState<LyricsApproval[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Aprovação automática: flag no backend; worker executa a cada 8s (independente da página aberta)
+  // Aprovação automática: flag em admin_auto_jobs; worker no backend a cada 8s (página pode estar fechada)
   const {
     isEnabled: isAutoApproveEnabled,
     setEnabled: setAutoApproveEnabled,
@@ -120,8 +127,10 @@ export default function AdminLyrics() {
     queryClient.invalidateQueries({ queryKey: LYRICS_QUERY_KEYS.count });
   }, [queryClient]);
 
-  // Fallback: com a página aberta e aprovação automática ativada, o frontend chama a Edge Function a cada 8s (funciona mesmo se o worker do backend não estiver rodando)
-  const autoApproveOn = isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS);
+  // Fallback: com a página aberta e aprovação automática ativada, o frontend chama a Edge Function a cada 8s
+  const autoApproveOn = isAutoApproveEnabled(
+    ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS
+  );
   useEffect(() => {
     if (!autoApproveOn) return;
     const LYRICS_INTERVAL_MS = 8000;
@@ -137,15 +146,22 @@ export default function AdminLyrics() {
           }
           if (error && import.meta.env.DEV) {
             console.warn("[Auto-approve] Erro na Edge Function:", error);
-            toast.error("Aprovação automática: falha na chamada. Verifique o console.");
+            toast.error(
+              "Aprovação automática: falha na chamada. Verifique o console."
+            );
           }
         })
         .catch((err) => {
           refetchPendingRef.current?.();
           refetchApprovedRef.current?.();
           if (import.meta.env.DEV) {
-            console.warn("[Auto-approve] Falha ao chamar run-one-auto-approve-lyrics:", err);
-            toast.error("Aprovação automática: falha (CORS/rede?). Verifique o console.");
+            console.warn(
+              "[Auto-approve] Falha ao chamar run-one-auto-approve-lyrics:",
+              err
+            );
+            toast.error(
+              "Aprovação automática: falha (CORS/rede?). Verifique o console."
+            );
           }
         });
     };
@@ -155,8 +171,7 @@ export default function AdminLyrics() {
     return () => clearInterval(t);
   }, [autoApproveOn, invalidateLyricsQueries]);
 
-  // Hook para aprovações rejeitadas com paginação
-  // ✅ OTIMIZAÇÃO: Só carregar dados quando a tab estiver ativa
+  // Hook para aprovações rejeitadas com paginação (só carrega quando a tab estiver ativa)
   const {
     approvals: rejectedApprovalsPage,
     isLoading: loadingRejected,
@@ -169,7 +184,7 @@ export default function AdminLyrics() {
     includeExpired: true,
     limit: ITEMS_PER_PAGE,
     offset: (rejectedPage - 1) * ITEMS_PER_PAGE,
-    enabled: activeTab === "rejected" // ✅ Só carregar dados quando tab estiver ativa
+    enabled: activeTab === "rejected"
   });
 
   // ✅ Hook robusto para regeneração em massa
@@ -277,7 +292,7 @@ export default function AdminLyrics() {
     searchByEmail();
   }, [debouncedSearchTerm]);
 
-  const handleApprove = useCallback(async (approvalId: string) => {
+  const handleApprove = useCallback(async (approvalId: string, orderId?: string | null) => {
     try {
       // Verificar autenticação antes de prosseguir
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -287,9 +302,9 @@ export default function AdminLyrics() {
         return;
       }
 
-      logger.debug('Iniciando aprovação de letras', { approvalId });
+      logger.debug('Iniciando aprovação de letras', { approvalId, orderId });
       // ✅ CORREÇÃO: Aguardar confirmação do servidor antes de mostrar sucesso
-      await approve(approvalId);
+      await approve({ approvalId, orderId });
       // ✅ CORREÇÃO: Só mostrar sucesso após confirmação - o card será movido via invalidação de queries
       toast.success('Letras aprovadas com sucesso!');
       logger.event('lyrics_approved', { approvalId });
@@ -655,23 +670,42 @@ export default function AdminLyrics() {
               const next = !isAutoApproveEnabled(jobType);
               try {
                 await setAutoApproveEnabled(jobType, next);
-                toast.success(next ? "Aprovação automática ativada (roda no servidor a cada 8s)." : "Aprovação automática desativada.");
-              } catch (e) {
+                toast.success(
+                  next
+                    ? "Aprovação automática ativada (roda no servidor a cada 8s)."
+                    : "Aprovação automática desativada."
+                );
+              } catch {
                 toast.error("Erro ao alterar aprovação automática.");
               }
             }}
-            variant={isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "default" : "outline"}
+            variant={
+              isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS)
+                ? "default"
+                : "outline"
+            }
             size="sm"
-            className={`h-9 ${isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-600" : "border-orange-500/50 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20"}`}
+            className={`h-9 ${
+              isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS)
+                ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+                : "border-orange-500/50 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20"
+            }`}
             disabled={isRegeneratingAll || isAutoApproveUpdating}
-            title={isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? "Desativar para parar. Roda no servidor a cada 8 segundos (página pode estar fechada)." : "Ativar aprovação automática no servidor (a cada 8s). Desative pelo botão para parar."}
+            title={
+              isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS)
+                ? "Desativar para parar. Roda no servidor a cada 8 segundos (página pode estar fechada)."
+                : "Ativar aprovação automática no servidor (a cada 8s). Desative pelo botão para parar."
+            }
           >
             {isAutoApproveUpdating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : isAutoApproveEnabled(ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS) ? (
+            ) : isAutoApproveEnabled(
+                ADMIN_AUTO_JOB_TYPES.AUTO_APPROVE_LYRICS
+              ) ? (
               <>
                 <Pause className="h-4 w-4 mr-2" />
-                Desativar aprovação automática {visiblePending.length > 0 && "(a cada 8s no servidor)"}
+                Desativar aprovação automática{" "}
+                {visiblePending.length > 0 && "(a cada 8s no servidor)"}
               </>
             ) : (
               <>

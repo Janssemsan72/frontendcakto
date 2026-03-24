@@ -15,8 +15,110 @@ interface Order {
   magic_token: string;
 }
 
-interface WebhookPayload {
+/** Letras / fluxos `lyrics_*` → webhook legado n8n Automaeia */
+const AUTOMATEIA_LETTERS_WEBHOOK =
+  'https://webhook.automaeia.com.br/webhook/music-lovely-webhhoks';
+
+/** Release de músicas (`music_released`) → fila de recebimento (distinto das letras) */
+const AUTOMATEIA_RELEASE_WEBHOOK =
+  'https://webhook.automaeia.com.br/webhook/recebimentos-musicas';
+
+/**
+ * Repassa o JSON ao Automaeia pelo servidor (Edge), evitando CORS.
+ * Não confundir com a função `n8n-webhook`: ela só aceita `{ order_id, event_type: pending_7min|paid }` (funnel/pago).
+ */
+const AUTOMATEIA_RELAY_FUNCTION = 'admin-automaeia-relay';
+
+function useAutomaeiaEdgeRelay(): boolean {
+  return import.meta.env.VITE_AUTOMATEIA_USE_EDGE_RELAY !== 'false';
+}
+
+type AutomaeiaRouteKind = 'release' | 'letters';
+
+function automaeiaRouteKind(payload: unknown): AutomaeiaRouteKind {
+  const p = payload as Record<string, unknown>;
+  const integ = p?.integration as { event?: string } | undefined;
+  if (integ?.event === 'music_released') return 'release';
+  if (Array.isArray(p?.download_links) && Array.isArray(p?.songs)) return 'release';
+  return 'letters';
+}
+
+/** URL final no fetch direto (Edge relay escolhe o destino no servidor pelo mesmo critério). */
+function resolveAutomaeiaUrl(payload: unknown): string {
+  const kind = automaeiaRouteKind(payload);
+  if (kind === 'release') {
+    const o = import.meta.env.VITE_AUTOMATEIA_RELEASE_WEBHOOK_URL?.trim();
+    return o || AUTOMATEIA_RELEASE_WEBHOOK;
+  }
+  const o = import.meta.env.VITE_AUTOMATEIA_LETTERS_WEBHOOK_URL?.trim();
+  return o || AUTOMATEIA_LETTERS_WEBHOOK;
+}
+
+type AutomaeiaRelayResponse = {
+  ok?: boolean;
+  detail?: string;
+  automaeia_status?: number;
+  error?: string;
+};
+
+/** POST JSON → Automaeia (relay Edge por padrão; `VITE_AUTOMATEIA_USE_EDGE_RELAY=false` força fetch direto). */
+async function postJsonToAutomaeia(payload: unknown): Promise<void> {
+  if (useAutomaeiaEdgeRelay()) {
+    const { data, error } = await supabase.functions.invoke(AUTOMATEIA_RELAY_FUNCTION, {
+      body: payload,
+    });
+    if (error) {
+      throw new Error(error.message || 'Falha ao chamar relay Automaeia (Edge)');
+    }
+    const d = (data ?? null) as AutomaeiaRelayResponse | null;
+    if (d && d.ok === false) {
+      throw new Error(
+        [d.detail, d.error].filter(Boolean).join(' ').trim() ||
+          `Automaeia retornou status ${d.automaeia_status ?? '?'}`
+      );
+    }
+    return;
+  }
+
+  const targetUrl = resolveAutomaeiaUrl(payload);
+  const response = await fetch(targetUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Erro desconhecido');
+    throw new Error(`Webhook retornou status ${response.status}: ${errorText}`);
+  }
+}
+
+function quizEmbedToSummary(quiz: Record<string, unknown> | null | undefined) {
+  if (!quiz || typeof quiz !== 'object') return null;
+  return {
+    about_who: (quiz.about_who as string) ?? '',
+    relationship: (quiz.relationship as string | null) ?? null,
+    style: (quiz.style as string) ?? '',
+    language: (quiz.language as string | null) ?? null,
+    vocal_gender: (quiz.vocal_gender as string | null) ?? null,
+    occasion: (quiz.occasion as string | null) ?? null,
+    desired_tone: (quiz.desired_tone as string | null) ?? null,
+    message: (quiz.message as string | null) ?? null,
+    qualities: quiz.qualities ?? null,
+    memories: quiz.memories ?? null,
+    key_moments: quiz.key_moments ?? null,
+    answers: quiz.answers ?? null,
+  };
+}
+
+/**
+ * Payload de release: **sem** `type` no root (fluxos n8n antigos usam “tem type = letra” e quebram com `music_released`).
+ * Use `integration.event === 'music_released'` no Switch novo.
+ */
+interface WebhookReleasePayload {
+  integration: { event: 'music_released' };
   order_id: string;
+  /** Todos os pedidos do grupo (ex.: mesmo email), quando aplicável */
+  order_ids: string[];
   email: string;
   phone: string | null;
   download_links: string[];
@@ -29,6 +131,8 @@ interface WebhookPayload {
   about: string;
   plan: string;
   magic_token: string;
+  quiz_id: string | null;
+  quiz_summary: ReturnType<typeof quizEmbedToSummary>;
 }
 
 /**
@@ -111,10 +215,10 @@ async function generateDownloadUrl(song: Song): Promise<string | null> {
   }
 
   try {
-    // Se audio_url já for uma URL completa e válida (signed URL ou URL pública), usar diretamente
-    if (song.audio_url.startsWith('http') && (song.audio_url.includes('supabase.co') || song.audio_url.includes('?token='))) {
-      console.log(`✅ [Webhook] Usando audio_url direto (URL completa) para música ${song.id}`);
-      return song.audio_url;
+    // Qualquer URL absoluta (Supabase, R2, CDN, etc.): usar no webhook sem passar pelo Storage API
+    if (song.audio_url.trim().startsWith('http')) {
+      console.log(`✅ [Webhook] Usando URL absoluta para música ${song.id}`);
+      return song.audio_url.trim();
     }
 
     // Extrair path do arquivo
@@ -185,18 +289,72 @@ async function generateDownloadUrl(song: Song): Promise<string | null> {
   }
 }
 
+export type SendReleaseWebhookMeta = {
+  /** IDs de todos os pedidos do card (agrupamento); default [order.id] */
+  allOrderIds?: string[];
+};
+
 /**
- * Envia dados do release para o webhook
+ * Envia release para o webhook Automaeia de **recebimento de músicas** (`recebimentos-musicas`).
+ * Letras continuam em `music-lovely-webhhoks` (ver `postJsonToAutomaeia` / relay Edge).
+ * Inclui `integration.event`, `quiz_summary` e `order_ids` (sem `type` no root — ver interface acima).
  */
 export async function sendReleaseWebhook(
   order: Order,
   songs: Song[],
-  about: string
+  about: string,
+  meta?: SendReleaseWebhookMeta
 ): Promise<void> {
-  const WEBHOOK_URL = 'https://webhook.automaeia.com.br/webhook/music-lovely-webhhoks';
-
   try {
-    console.log(`📤 [Webhook] Preparando dados para webhook - Order: ${order.id}, Songs: ${songs.length}`);
+    console.log(`📤 [Automaeia] release webhook — preparando order ${order.id}, ${songs.length} música(s)`);
+
+    const { data: ordFull } = await supabase
+      .from('orders')
+      .select(
+        `
+        customer_email,
+        customer_whatsapp,
+        plan,
+        magic_token,
+        quiz_id,
+        quizzes:quiz_id (
+          about_who,
+          relationship,
+          style,
+          language,
+          vocal_gender,
+          occasion,
+          desired_tone,
+          message,
+          qualities,
+          memories,
+          key_moments,
+          answers
+        )
+      `
+      )
+      .eq('id', order.id)
+      .maybeSingle();
+
+    const rawQuiz = ordFull?.quizzes;
+    const quizOne = (Array.isArray(rawQuiz) ? rawQuiz[0] : rawQuiz) as
+      | Record<string, unknown>
+      | null
+      | undefined;
+    const quiz_summary = quizEmbedToSummary(quizOne);
+
+    const emailResolved = (ordFull?.customer_email || order.customer_email || '').trim();
+    const phoneResolved = ordFull?.customer_whatsapp ?? order.customer_whatsapp ?? null;
+    const planResolved = ordFull?.plan || order.plan || 'unknown';
+    const magicResolved = ordFull?.magic_token || order.magic_token || '';
+    const aboutResolved =
+      about && about.trim() && about !== 'N/A'
+        ? about.trim()
+        : (quiz_summary?.about_who?.trim() || about || 'N/A');
+
+    const order_ids = meta?.allOrderIds?.length
+      ? [...new Set(meta.allOrderIds.filter(Boolean))]
+      : [order.id];
 
     // Gerar URLs de download para cada música
     const downloadUrls = await Promise.all(
@@ -214,45 +372,39 @@ export async function sendReleaseWebhook(
       download_url: downloadUrls[index] || null
     }));
 
-    // Montar payload
-    const payload: WebhookPayload = {
+    const payload: WebhookReleasePayload = {
+      integration: { event: 'music_released' },
       order_id: order.id,
-      email: order.customer_email,
-      phone: order.customer_whatsapp || null,
+      order_ids,
+      email: emailResolved,
+      phone: phoneResolved,
       download_links: validDownloadLinks,
       songs: songsWithUrls,
-      about: about || 'N/A',
-      plan: order.plan || 'unknown',
-      magic_token: order.magic_token || ''
+      about: aboutResolved || 'N/A',
+      plan: planResolved,
+      magic_token: magicResolved,
+      quiz_id: ordFull?.quiz_id ?? null,
+      quiz_summary,
     };
 
-    console.log(`📤 [Webhook] Enviando payload para webhook:`, {
+    console.log(`📤 [Automaeia] release webhook — enviando`, {
+      via: useAutomaeiaEdgeRelay() ? AUTOMATEIA_RELAY_FUNCTION : 'fetch direto',
+      integration_event: payload.integration.event,
       order_id: payload.order_id,
-      email: payload.email,
+      order_ids_count: payload.order_ids.length,
+      email: payload.email ? '(ok)' : '(vazio)',
       phone: payload.phone ? '***' : null,
       download_links_count: payload.download_links.length,
-      songs_count: payload.songs.length
+      songs_count: payload.songs.length,
+      has_quiz_summary: !!payload.quiz_summary,
     });
 
-    // Enviar para o webhook
-    const response = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    await postJsonToAutomaeia(payload);
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Erro desconhecido');
-      throw new Error(`Webhook retornou status ${response.status}: ${errorText}`);
-    }
-
-    console.log(`✅ [Webhook] Webhook enviado com sucesso para order ${order.id}`);
+    console.log(`✅ [Automaeia] release webhook enviado para order ${order.id}`);
   } catch (error: any) {
-    // Não bloquear o fluxo - apenas logar o erro
-    console.error(`❌ [Webhook] Erro ao enviar webhook para order ${order.id}:`, error);
-    // Não lançar o erro para não bloquear o fluxo de release
+    console.error(`❌ [Automaeia] release webhook falhou (order ${order.id}):`, error);
+    throw error;
   }
 }
 
@@ -267,8 +419,6 @@ export async function sendLyricsPendingWebhook(
   email: string,
   phone: string | null
 ): Promise<void> {
-  const WEBHOOK_URL = 'https://webhook.automaeia.com.br/webhook/music-lovely-webhhoks';
-
   try {
     console.log(`📤 [Webhook Lyrics] Preparando dados para webhook - Order: ${order_id}, Email: ${email}`);
 
@@ -287,90 +437,151 @@ export async function sendLyricsPendingWebhook(
       type: payload.type
     });
 
-    // Enviar para o webhook
-    const response = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Erro desconhecido');
-      throw new Error(`Webhook retornou status ${response.status}: ${errorText}`);
-    }
+    await postJsonToAutomaeia(payload);
 
     console.log(`✅ [Webhook Lyrics] Webhook enviado com sucesso para order ${order_id}`);
   } catch (error: any) {
-    // Não bloquear o fluxo - apenas logar o erro
     console.error(`❌ [Webhook Lyrics] Erro ao enviar webhook para order ${order_id}:`, error);
-    // Não lançar o erro para não bloquear o fluxo de criação de letra
+    throw error;
   }
 }
 
+function lyricsBodyForWebhook(lyrics: unknown): string | undefined {
+  if (lyrics == null) return undefined;
+  let s: string;
+  if (typeof lyrics === 'string') s = lyrics;
+  else {
+    try {
+      s = JSON.stringify(lyrics);
+    } catch {
+      return undefined;
+    }
+  }
+  const max = 12000;
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
 /**
- * Invoca a Edge Function n8n-webhook para evento de letra aprovada.
- * Não bloqueia o fluxo; erros são apenas logados.
+ * Notifica Automaeia/n8n quando uma letra é aprovada (HTTP direto; mesma base que lyrics_pending).
+ * Envia letra + contexto do pedido/quiz (plan, magic_token, about, resumo do quiz) para o n8n não depender só de `lyrics_text`.
  */
 export async function sendN8nLyricsApproved(
   approvalId: string,
   orderId?: string
 ): Promise<void> {
   try {
-    const body = {
-      type: 'lyrics_approved',
-      approval_id: approvalId,
-      order_id: orderId ?? null,
-    };
-    console.log(`📤 [n8n-webhook] Enviando lyrics_approved - approval_id: ${approvalId}`);
-    const { error } = await supabase.functions.invoke('n8n-webhook', { body });
-    if (error) {
-      console.error(`❌ [n8n-webhook] Erro ao enviar lyrics_approved:`, error);
-      return;
-    }
-    console.log(`✅ [n8n-webhook] lyrics_approved enviado para approval ${approvalId}`);
-  } catch (err: any) {
-    console.error(`❌ [n8n-webhook] Exceção ao enviar lyrics_approved:`, err?.message ?? err);
-  }
-}
+    const { data: appRow } = await supabase
+      .from('lyrics_approvals')
+      .select('order_id, quiz_id, lyrics, lyrics_preview, voice')
+      .eq('id', approvalId)
+      .maybeSingle();
 
-/**
- * Invoca a Edge Function n8n-webhook para evento de música liberada.
- * Não bloqueia o fluxo; erros são apenas logados.
- */
-export async function sendN8nMusicReleased(
-  order: Order,
-  songs: Song[],
-  about: string
-): Promise<void> {
-  try {
-    const downloadUrls = await Promise.all(songs.map((s) => generateDownloadUrl(s)));
-    const songsWithUrls = songs.map((song, index) => ({
-      id: song.id,
-      title: song.title || 'Música sem título',
-      variant_number: song.variant_number,
-      download_url: downloadUrls[index] || null,
-    }));
-    const body = {
-      type: 'music_released',
-      order_id: order.id,
-      email: order.customer_email,
-      phone: order.customer_whatsapp || null,
-      songs: songsWithUrls,
-      about: about || 'N/A',
-      plan: order.plan || 'unknown',
-      magic_token: order.magic_token || '',
-    };
-    console.log(`📤 [n8n-webhook] Enviando music_released - order_id: ${order.id}, songs: ${songs.length}`);
-    const { error } = await supabase.functions.invoke('n8n-webhook', { body });
-    if (error) {
-      console.error(`❌ [n8n-webhook] Erro ao enviar music_released:`, error);
+    let resolvedOrderId = orderId?.trim() || appRow?.order_id || undefined;
+    if (!resolvedOrderId) {
+      console.error(
+        '❌ [Automaeia] lyrics_approved: order_id ausente (approval_id:',
+        approvalId,
+        ')'
+      );
       return;
     }
-    console.log(`✅ [n8n-webhook] music_released enviado para order ${order.id}`);
+
+    const { data: ordRow } = await supabase
+      .from('orders')
+      .select(
+        `
+        customer_email,
+        customer_whatsapp,
+        plan,
+        magic_token,
+        quiz_id,
+        quizzes:quiz_id (
+          about_who,
+          relationship,
+          style,
+          language,
+          vocal_gender,
+          occasion,
+          desired_tone,
+          message,
+          qualities,
+          memories,
+          key_moments,
+          answers
+        )
+      `
+      )
+      .eq('id', resolvedOrderId)
+      .maybeSingle();
+
+    const rawQuiz = ordRow?.quizzes;
+    const quizOne = (Array.isArray(rawQuiz) ? rawQuiz[0] : rawQuiz) as
+      | Record<string, unknown>
+      | null
+      | undefined;
+
+    let quiz_summary = quizEmbedToSummary(quizOne);
+    if (!quiz_summary && appRow?.quiz_id) {
+      const { data: qRow } = await supabase
+        .from('quizzes')
+        .select(
+          `
+          about_who,
+          relationship,
+          style,
+          language,
+          vocal_gender,
+          occasion,
+          desired_tone,
+          message,
+          qualities,
+          memories,
+          key_moments,
+          answers
+        `
+        )
+        .eq('id', appRow.quiz_id)
+        .maybeSingle();
+      quiz_summary = quizEmbedToSummary(qRow as Record<string, unknown> | undefined);
+    }
+
+    const lyricsText = lyricsBodyForWebhook(appRow?.lyrics);
+    const about = (quiz_summary?.about_who || '').trim() || 'N/A';
+
+    const payload = {
+      type: 'lyrics_approved' as const,
+      order_id: resolvedOrderId,
+      approval_id: approvalId,
+      email: ordRow?.customer_email ?? '',
+      phone: ordRow?.customer_whatsapp ?? null,
+      plan: ordRow?.plan ?? '',
+      magic_token: ordRow?.magic_token ?? '',
+      quiz_id: ordRow?.quiz_id ?? appRow?.quiz_id ?? null,
+      about: about || 'N/A',
+      quiz_summary,
+      lyrics_preview: appRow?.lyrics_preview ?? '',
+      voice: appRow?.voice ?? null,
+      /** Objeto completo da coluna `lyrics` (estrutura JSON), além de `lyrics_text` plano. */
+      lyrics_data: appRow?.lyrics ?? null,
+      ...(lyricsText !== undefined ? { lyrics_text: lyricsText } : {}),
+    };
+
+    console.log(
+      `📤 [Automaeia] lyrics_approved → order_id: ${resolvedOrderId}, approval_id: ${approvalId}, has_lyrics_text: ${!!lyricsText}, has_quiz_summary: ${!!quiz_summary}, plan: ${payload.plan ? 'yes' : 'no'}`
+    );
+
+    try {
+      await postJsonToAutomaeia(payload);
+    } catch (lyricsWhErr: unknown) {
+      const msg =
+        lyricsWhErr instanceof Error ? lyricsWhErr.message : String(lyricsWhErr);
+      console.error(`❌ [Automaeia] lyrics_approved falhou`, msg);
+      return;
+    }
+
+    console.log(`✅ [Automaeia] lyrics_approved enviado para approval ${approvalId}`);
   } catch (err: any) {
-    console.error(`❌ [n8n-webhook] Exceção ao enviar music_released:`, err?.message ?? err);
+    console.error(`❌ [Automaeia] Exceção ao enviar lyrics_approved:`, err?.message ?? err);
   }
 }
 

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, queryClient } from '@/lib/queryClient';
 import { supabase, isSupabaseReady } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { sendReleaseWebhook, sendN8nMusicReleased } from '@/utils/webhook';
+import { sendReleaseWebhook } from '@/utils/webhook';
 
 /**
  * Função auxiliar para contar pedidos via paginação (suporta milhões de registros)
@@ -1847,7 +1847,7 @@ export function useReleaseMutation() {
           console.error('❌ [Release] Nenhum ID válido após filtro');
           throw new Error('Nenhum ID de pedido válido fornecido');
         }
-      
+
         // ✅ CORREÇÃO CRÍTICA: Usar músicas pré-carregadas se disponíveis (evita query lenta)
         let songs, fetchError;
         
@@ -2037,18 +2037,36 @@ export function useReleaseMutation() {
         if (orderError) {
           console.error('❌ [Release] Erro ao buscar order:', orderError);
         }
-      
+
+        const about = (order?.quizzes as any)?.about_who || 'N/A';
+        const songsPayload = songsToRelease.map(s => ({
+          id: s.id,
+          title: s.title || 'Música sem título',
+          variant_number: s.variant_number || 1,
+          audio_url: s.audio_url || undefined
+        }));
+        const orderPayload = {
+          id: orderIdForEmail,
+          customer_email: order?.customer_email || '',
+          customer_whatsapp: order?.customer_whatsapp ?? null,
+          plan: order?.plan || 'unknown',
+          magic_token: order?.magic_token || ''
+        };
+
       if (!order?.customer_email) {
         toast.warning(`Músicas liberadas, mas email do cliente não encontrado.`);
-          // Ainda retornar sucesso pois as músicas foram liberadas
+        try {
+          await sendReleaseWebhook(orderPayload, songsPayload, about, {
+            allOrderIds: validOrderIds,
+          });
+        } catch (whErr) {
+          console.error('❌ [Release] [Webhook] Erro (sem email no pedido):', whErr);
+        }
         return updatedSongs;
       }
       
         // ✅ CORREÇÃO CRÍTICA: Aguardar envio do email com timeout para evitar travamento
         const emailStart = Date.now();
-        
-        // Preparar dados para webhook
-        const about = (order?.quizzes as any)?.about_who || 'N/A';
         
         try {
           // ✅ NOVO: Enviar email e webhook em paralelo
@@ -2067,28 +2085,13 @@ export function useReleaseMutation() {
             setTimeout(() => reject(new Error('Timeout: Envio de email demorou mais de 15 segundos')), 15000)
           );
           
-          // Chamar webhook e n8n-webhook em paralelo (não bloqueante)
-          const orderPayload = order ? {
-            id: orderIdForEmail,
-            customer_email: order.customer_email || '',
-            customer_whatsapp: order.customer_whatsapp || null,
-            plan: order.plan || 'unknown',
-            magic_token: order.magic_token || ''
-          } : null;
-          const songsPayload = songsToRelease.map(s => ({
-            id: s.id,
-            title: s.title || 'Música sem título',
-            variant_number: s.variant_number || 1,
-            audio_url: s.audio_url || undefined
-          }));
-          const webhookPromise = orderPayload ? sendReleaseWebhook(orderPayload, songsPayload, about) : Promise.resolve();
-          const n8nPromise = orderPayload ? sendN8nMusicReleased(orderPayload, songsPayload, about) : Promise.resolve();
+          const webhookPromise = sendReleaseWebhook(orderPayload, songsPayload, about, {
+            allOrderIds: validOrderIds,
+          });
           
-          // Executar email, webhook e n8n-webhook em paralelo
-          const [emailResult, webhookResult, n8nResult] = await Promise.allSettled([
+          const [emailResult, webhookResult] = await Promise.allSettled([
             Promise.race([emailPromise, emailTimeout]),
             webhookPromise,
-            n8nPromise
           ]);
           
           // Processar resultado do email
@@ -2101,12 +2104,15 @@ export function useReleaseMutation() {
             emailError = emailResult.reason;
           }
           
-          // Processar resultado do webhook (não bloquear)
+          // Processar resultado do webhook (não bloquear — avisar no UI; antes era silencioso)
           if (webhookResult.status === 'rejected') {
             console.error('❌ [Release] [Webhook] Erro ao enviar webhook (não bloqueante):', webhookResult.reason);
-          }
-          if (n8nResult.status === 'rejected') {
-            console.error('❌ [Release] [n8n-webhook] Erro ao enviar n8n-webhook (não bloqueante):', n8nResult.reason);
+            const whReason = webhookResult.reason;
+            const whMsg =
+              whReason instanceof Error ? whReason.message : String(whReason);
+            toast.warning(
+              `Webhook Automaeia falhou: ${whMsg.slice(0, 160)}${whMsg.length > 160 ? '…' : ''}`
+            );
           }
         
         if (emailError) {
