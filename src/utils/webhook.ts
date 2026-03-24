@@ -27,7 +27,10 @@ const AUTOMATEIA_RELEASE_WEBHOOK =
  * Repassa o JSON ao Automaeia pelo servidor (Edge), evitando CORS.
  * Não confundir com a função `n8n-webhook`: ela só aceita `{ order_id, event_type: pending_7min|paid }` (funnel/pago).
  */
-const AUTOMATEIA_RELAY_FUNCTION = 'admin-automaeia-relay';
+/** Edge que faz POST server-side para o Automaeia (evita CORS). */
+const AUTOMATEIA_RELAY_FUNCTION =
+  (import.meta.env.VITE_AUTOMATEIA_RELAY_FUNCTION as string | undefined)?.trim() ||
+  'admin-automaeia-relay';
 
 function useAutomaeiaEdgeRelay(): boolean {
   return import.meta.env.VITE_AUTOMATEIA_USE_EDGE_RELAY !== 'false';
@@ -584,4 +587,3 @@ export async function sendN8nLyricsApproved(
     console.error(`❌ [Automaeia] Exceção ao enviar lyrics_approved:`, err?.message ?? err);
   }
 }
-
