@@ -24,6 +24,8 @@ import { sanitizeEmail } from '@/utils/sanitize';
 import { insertQuizWithRetry, type QuizPayload } from '@/utils/quizInsert';
 import { enqueueQuizToServer } from '@/utils/quizInsert';
 import { trackBeginCheckout, trackRedirectToPayment, getGAClientId, storeHashedUserData } from '@/utils/gtmTracking';
+import { safeTrackCheckout } from '@/utils/pixelTracking';
+import { getTrackingData, getCookieValue } from '@/utils/meta-tracking';
 import { LinkWithUtms } from '@/components/LinkWithUtms';
 import CheckoutHeader from './components/CheckoutHeader';
 import CheckoutForm from './components/CheckoutForm';
@@ -742,6 +744,13 @@ export default function Checkout() {
           try {
             const caktoConf = getCaktoCheckoutConfig();
             trackBeginCheckout('', caktoConf.amount_cents / 100, 'BRL');
+            // ✅ Meta Pixel: InitiateCheckout
+            safeTrackCheckout({
+              value: caktoConf.amount_cents / 100,
+              currency: 'BRL',
+              content_name: 'Música Personalizada',
+              content_category: 'checkout',
+            });
           } catch (trackError) {
             logger.warn('⚠️ [Checkout] Erro ao rastrear evento:', trackError);
           }
@@ -1987,6 +1996,13 @@ export default function Checkout() {
           currency: 'BRL',
           payment_provider: getPaymentGateway(),
         });
+        // ✅ Meta Pixel: InitiateCheckout
+        safeTrackCheckout({
+          value: plan?.price ?? 0,
+          currency: 'BRL',
+          content_name: 'Música Personalizada',
+          content_category: 'checkout',
+        });
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
         return;
@@ -2321,6 +2337,13 @@ export default function Checkout() {
         value: plan?.price ?? 0,
         currency: 'BRL',
         payment_provider: paymentGatewayForRedirect,
+      });
+      // ✅ Meta Pixel: InitiateCheckout no momento do redirect
+      safeTrackCheckout({
+        value: plan?.price ?? 0,
+        currency: 'BRL',
+        content_name: 'Música Personalizada',
+        content_category: 'checkout',
       });
 
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)
