@@ -178,27 +178,27 @@ export default function AdminMetaAds() {
   return (
     <div className="space-y-6">
       {/* Hero + Tabs Card */}
-      <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-        <div className="border-b bg-gradient-to-br from-[#171717] to-[#3f3f46] px-6 py-6 text-white">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <section style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #e7e5e4', background: '#fff' }}>
+        <div style={{ borderBottom: '1px solid #d6d3d1', background: 'linear-gradient(135deg, #171717, #3f3f46)', padding: '24px', color: '#fff' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200">Conversions API</p>
-              <h1 className="mt-2 text-2xl font-semibold">Meta Ads</h1>
-              <p className="mt-2 max-w-2xl text-sm text-stone-300">
+              <p style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.22em', color: '#93c5fd' }}>Conversions API</p>
+              <h1 style={{ marginTop: '8px', fontSize: '24px', fontWeight: 600, color: '#fff' }}>Meta Ads</h1>
+              <p style={{ marginTop: '8px', fontSize: '14px', color: '#d6d3d1', maxWidth: '600px' }}>
                 Manage the system Meta Pixel ID and Access Token used by the public site and server-side CAPI events.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-white/90">
-                {pixels.length} pixel{pixels.length !== 1 ? "s" : ""} configured
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 500 }}>
+              <span style={{ borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.1)', padding: '4px 12px', color: 'rgba(255,255,255,0.9)' }}>
+                {pixels.length} pixel{pixels.length !== 1 ? 's' : ''} configured
               </span>
-              <span className="rounded-full bg-emerald-400/20 px-3 py-1 text-emerald-100">
-                {events.filter(e => e.status === "sent").length} events sent
+              <span style={{ borderRadius: '9999px', background: 'rgba(52,211,153,0.2)', padding: '4px 12px', color: '#a7f3d0' }}>
+                {events.filter(e => e.status === 'sent').length} events sent
               </span>
-              {tab === "pixels" && (
+              {tab === 'pixels' && (
                 <button type="button" onClick={() => setShowForm(!showForm)}
-                  className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-stone-900 shadow-sm hover:bg-stone-100 transition-colors">
-                  {showForm ? "Cancel" : "+ Add Pixel"}
+                  style={{ borderRadius: '9999px', background: '#fff', padding: '6px 16px', fontSize: '12px', fontWeight: 600, color: '#1c1917', border: 'none', cursor: 'pointer' }}>
+                  {showForm ? 'Cancel' : '+ Add Pixel'}
                 </button>
               )}
             </div>
@@ -206,19 +206,22 @@ export default function AdminMetaAds() {
         </div>
 
         {/* Tabs inside hero card */}
-        <div className="flex gap-1 px-6 pt-1 border-b border-stone-100">
+        <div style={{ display: 'flex', gap: '4px', padding: '4px 24px 0', borderBottom: '1px solid #f5f5f4' }}>
           {([
-            { id: "pixels" as Tab, label: "Pixels & Tokens", icon: "📱" },
-            { id: "utm" as Tab, label: "UTM Analytics", icon: "📈" },
-            { id: "events" as Tab, label: "Event Log", icon: "📋" },
+            { id: 'pixels' as Tab, label: 'Pixels & Tokens', icon: '📱' },
+            { id: 'utm' as Tab, label: 'UTM Analytics', icon: '📈' },
+            { id: 'events' as Tab, label: 'Event Log', icon: '📋' },
           ]).map((t) => (
             <button key={t.id} type="button" onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                tab === t.id ? "border-stone-800 text-stone-800" : "border-transparent text-stone-400 hover:text-stone-600"
-              }`}>
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px',
+                fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', border: 'none', background: 'transparent', cursor: 'pointer',
+                borderBottom: tab === t.id ? '2px solid #292524' : '2px solid transparent',
+                color: tab === t.id ? '#292524' : '#a8a29e',
+              }}>
               <span>{t.icon}</span> {t.label}
-              {t.id === "pixels" && pixels.length > 0 && (
-                <span className="ml-1 text-[11px] rounded-full bg-stone-100 px-1.5 py-0.5 text-stone-500">{pixels.length}</span>
+              {t.id === 'pixels' && pixels.length > 0 && (
+                <span style={{ marginLeft: '4px', fontSize: '11px', borderRadius: '9999px', background: '#f5f5f4', padding: '2px 6px', color: '#78716c' }}>{pixels.length}</span>
               )}
             </button>
           ))}
@@ -333,30 +336,30 @@ export default function AdminMetaAds() {
           )}
 
           {/* Pipeline visual */}
-          <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-            <div className="border-b bg-stone-50 px-6 py-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500">Events Dispatched via CAPI</p>
-              <h2 className="mt-2 text-lg font-semibold text-stone-900">Server-side tracking pipeline</h2>
+          <section style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #e7e5e4', background: '#fff' }}>
+            <div style={{ borderBottom: '1px solid #f5f5f4', background: '#fafaf9', padding: '20px 24px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#78716c' }}>Events Dispatched via CAPI</p>
+              <h2 style={{ marginTop: '8px', fontSize: '18px', fontWeight: 600, color: '#1c1917' }}>Server-side tracking pipeline</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-px bg-stone-100">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1px', background: '#f5f5f4' }}>
               {[
-                { icon: "👁️", bg: "bg-blue-100", name: "PageView", desc: "Fires as soon as the public page loads, with a browser Pixel event and CAPI safety event." },
-                { icon: "📄", bg: "bg-indigo-100", name: "ViewContent", desc: "Fires immediately on the landing/order view for the personalized music product." },
-                { icon: "🛒", bg: "bg-orange-100", name: "InitiateCheckout", desc: "Fires when the order flow opens and again server-side when the order is created." },
-                { icon: "💳", bg: "bg-amber-100", name: "AddPaymentInfo", desc: "Fires the moment payment checkout URL is ready, before redirect." },
-                { icon: "💰", bg: "bg-emerald-100", name: "Purchase", desc: "Fires for the initial payment on the success page." },
+                { icon: '👁️', bg: '#dbeafe', name: 'PageView', desc: 'Fires as soon as the public page loads, with a browser Pixel event and CAPI safety event.' },
+                { icon: '📄', bg: '#e0e7ff', name: 'ViewContent', desc: 'Fires immediately on the landing/order view for the personalized music product.' },
+                { icon: '🛒', bg: '#ffedd5', name: 'InitiateCheckout', desc: 'Fires when the order flow opens and again server-side when the order is created.' },
+                { icon: '💳', bg: '#fef3c7', name: 'AddPaymentInfo', desc: 'Fires the moment payment checkout URL is ready, before redirect.' },
+                { icon: '💰', bg: '#d1fae5', name: 'Purchase', desc: 'Fires for the initial payment on the success page.' },
               ].map(ev => (
-                <div key={ev.name} className="bg-white p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${ev.bg} text-sm`}>{ev.icon}</span>
-                    <p className="text-sm font-bold text-stone-900">{ev.name}</p>
+                <div key={ev.name} style={{ background: '#fff', padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ display: 'flex', width: '32px', height: '32px', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', background: ev.bg, fontSize: '14px' }}>{ev.icon}</span>
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#1c1917' }}>{ev.name}</p>
                   </div>
-                  <p className="text-xs text-stone-500 leading-relaxed">{ev.desc}</p>
+                  <p style={{ fontSize: '12px', color: '#78716c', lineHeight: '1.6' }}>{ev.desc}</p>
                 </div>
               ))}
             </div>
-            <div className="border-t border-stone-100 px-6 py-3 text-xs text-stone-400">
-              <strong className="text-stone-500">Match quality:</strong> em · ph · fn/ln · external_id · client_ip · user_agent · fbc · fbp · country — SHA-256 hashed
+            <div style={{ borderTop: '1px solid #f5f5f4', padding: '12px 24px', fontSize: '12px', color: '#a8a29e' }}>
+              <strong style={{ color: '#78716c' }}>Match quality:</strong> em · ph · fn/ln · external_id · client_ip · user_agent · fbc · fbp · country — SHA-256 hashed
             </div>
           </section>
         </div>
