@@ -9,7 +9,10 @@ import {
   TrendingUp, Calendar, Filter, Activity
 } from "@/utils/iconImports";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+let API_URL = import.meta.env.VITE_API_URL || "";
+if (API_URL && !API_URL.startsWith("http")) {
+  API_URL = `https://${API_URL}`;
+}
 
 interface MetaPixelConfig {
   id: string; name: string; pixel_id: string; access_token: string;
@@ -31,9 +34,16 @@ interface UtmRow {
 type Tab = "pixels" | "utm" | "events";
 
 async function apiFetch(path: string, opts?: RequestInit) {
+  const headers: Record<string, string> = {};
+  if (opts?.body) {
+    headers["Content-Type"] = "application/json";
+  }
+  
   const res = await fetch(`${API_URL}${path}`, {
-    ...opts, headers: { "Content-Type": "application/json", ...opts?.headers },
+    ...opts, 
+    headers: { ...headers, ...opts?.headers },
   });
+  
   if (!res.ok) {
     let msg = `API ${res.status}`;
     try { const body = await res.json(); if (body?.error) msg = body.error; } catch {}
@@ -161,7 +171,7 @@ export default function AdminMetaAds() {
     try {
       await apiFetch(`/api/admin/meta-pixels/${p.id}`, { method: "DELETE" });
       toast.success("Pixel excluído"); await loadPixels();
-    } catch { toast.error("Erro ao excluir"); }
+    } catch (err: any) { toast.error(err?.message || "Erro ao excluir"); }
   }
 
   async function handleTest(id: string) {
