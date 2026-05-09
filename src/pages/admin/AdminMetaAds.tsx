@@ -34,7 +34,11 @@ async function apiFetch(path: string, opts?: RequestInit) {
   const res = await fetch(`${API_URL}${path}`, {
     ...opts, headers: { "Content-Type": "application/json", ...opts?.headers },
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    let msg = `API ${res.status}`;
+    try { const body = await res.json(); if (body?.error) msg = body.error; } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -122,7 +126,7 @@ export default function AdminMetaAds() {
       toast.success("Pixel criado!");
       setShowForm(false); setFormPixelId(""); setFormToken("");
       await loadPixels();
-    } catch { toast.error("Erro ao criar pixel"); }
+    } catch (err: any) { toast.error(err?.message || "Erro ao criar pixel"); }
     finally { setSaving(false); }
   }
 
