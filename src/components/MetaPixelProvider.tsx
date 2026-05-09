@@ -9,7 +9,10 @@
 import { useEffect, useRef } from 'react';
 import { fireServerPageView } from '@/utils/meta-tracking';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+let API_URL = import.meta.env.VITE_API_URL || '';
+if (API_URL && !API_URL.startsWith('http')) {
+  API_URL = `https://${API_URL}`;
+}
 
 export default function MetaPixelProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);

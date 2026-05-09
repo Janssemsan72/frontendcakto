@@ -3,7 +3,10 @@
  * Handles cookie reading, UTM collection, PageView CAPI, and Purchase deduplication
  */
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+let API_URL = import.meta.env.VITE_API_URL || '';
+if (API_URL && !API_URL.startsWith('http')) {
+  API_URL = `https://${API_URL}`;
+}
 
 /** Read a cookie value by name */
 export function getCookieValue(name: string): string {
