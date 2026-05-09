@@ -1,18 +1,14 @@
 /**
  * MetaPixelProvider
  *
- * Loads active Meta Pixel IDs from the backend, injects fbevents.js,
- * initializes all pixels, and fires PageView (browser + CAPI).
+ * Loads active Meta Pixel IDs from Supabase directly (no backend dependency),
+ * injects fbevents.js, initializes ALL pixels, and fires PageView for each.
  *
  * Wrap your app with this component for automatic tracking on all pages.
  */
 import { useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase';
 import { fireServerPageView } from '@/utils/meta-tracking';
-
-let API_URL = import.meta.env.VITE_API_URL || '';
-if (API_URL && !API_URL.startsWith('http')) {
-  API_URL = `https://${API_URL}`;
-}
 
 export default function MetaPixelProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
@@ -23,11 +19,27 @@ export default function MetaPixelProvider({ children }: { children: React.ReactN
 
     (async () => {
       try {
-        // 1) Fetch active pixel IDs from backend
-        const res = await fetch(`${API_URL}/api/meta-pixel-ids`);
-        if (!res.ok) return;
-        const { pixel_ids } = await res.json();
-        if (!pixel_ids || pixel_ids.length === 0) return;
+        // 1) Fetch active pixel IDs directly from Supabase (no backend needed)
+        const { data, error } = await supabase
+          .from('meta_pixels')
+          .select('pixel_id')
+          .eq('is_active', true);
+
+        if (error) {
+          console.warn('[MetaPixel] Supabase error:', error.message);
+          return;
+        }
+
+        // Extract and deduplicate pixel IDs
+        const pixel_ids = [...new Set(
+          (data ?? [])
+            .map((row: { pixel_id: string }) => row.pixel_id?.trim())
+            .filter(Boolean)
+        )];
+
+        console.log('[MetaPixel] Active pixels:', pixel_ids);
+
+        if (pixel_ids.length === 0) return;
 
         // 2) Inject fbevents.js if not already loaded
         if (!(window as any).fbq) {
@@ -56,16 +68,20 @@ export default function MetaPixelProvider({ children }: { children: React.ReactN
 
         const fbq = (window as any).fbq;
 
-        // 3) Init and track each pixel explicitly
+        // 3) Init ALL pixels first
         for (const id of pixel_ids) {
           fbq('init', id);
-          fbq('trackSingle', id, 'PageView');
+          console.log('[MetaPixel] Initialized pixel:', id);
         }
+
+        // 4) Fire a single PageView that applies to ALL initialized pixels
+        fbq('track', 'PageView');
+        console.log('[MetaPixel] PageView fired for all', pixel_ids.length, 'pixels');
 
         // 5) Fire server-side CAPI PageView
         fireServerPageView();
-      } catch {
-        // Silent: tracking should never break the app
+      } catch (err) {
+        console.warn('[MetaPixel] Error:', err);
       }
     })();
   }, []);
