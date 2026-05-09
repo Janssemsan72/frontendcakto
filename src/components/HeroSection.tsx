@@ -13,10 +13,74 @@ const heroVideoSources = {
   original: '/video/musiclovaly.webm'        // Vídeo original (fallback se versão comprimida não existir)
 };
 
+/** Frame ~50% da duração do clip (extraído do WebM), alinhado ao instante inicial de reprodução — evita “pulo” poster → vídeo. */
+const heroVideoPoster = '/video/musiclovaly-poster.webp';
+
+function queueHeroVideoStart(video: HTMLVideoElement, isMobile: boolean): () => void {
+  let cancelled = false;
+  let seekedListener: (() => void) | null = null;
+
+  const tryPlay = () => {
+    if (cancelled) return;
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        if (!cancelled && isMobile) {
+          setTimeout(() => {
+            if (!cancelled && video.paused) {
+              video.play().catch(() => {});
+            }
+          }, 100);
+        }
+      });
+    }
+  };
+
+  const seekToMiddleAndPlay = () => {
+    if (cancelled) return;
+    const d = video.duration;
+    if (!Number.isFinite(d) || d <= 0) {
+      tryPlay();
+      return;
+    }
+    const mid = d / 2;
+    seekedListener = () => {
+      video.removeEventListener("seeked", seekedListener!);
+      seekedListener = null;
+      if (!cancelled) tryPlay();
+    };
+    video.addEventListener("seeked", seekedListener);
+    video.currentTime = mid;
+  };
+
+  const onLoadedMetadata = () => {
+    seekToMiddleAndPlay();
+  };
+
+  if (
+    video.readyState >= HTMLMediaElement.HAVE_METADATA &&
+    Number.isFinite(video.duration) &&
+    video.duration > 0
+  ) {
+    seekToMiddleAndPlay();
+  } else {
+    video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+  }
+
+  return () => {
+    cancelled = true;
+    video.removeEventListener("loadedmetadata", onLoadedMetadata);
+    if (seekedListener) {
+      video.removeEventListener("seeked", seekedListener);
+    }
+  };
+}
+
 export default function HeroSection() {
   const [shouldLoadVideo, setShouldLoadVideo] = React.useState(true);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const mountedRef = React.useRef(true);
+  const detachHeroVideoStartRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
     mountedRef.current = true;
@@ -28,9 +92,12 @@ export default function HeroSection() {
   // Recarregar vídeo quando a conexão voltar após falha/offline
   React.useEffect(() => {
     const handleOnline = () => {
-      if (mountedRef.current && shouldLoadVideo && videoRef.current) {
-        videoRef.current.load();
-      }
+      if (!mountedRef.current || !shouldLoadVideo || !videoRef.current) return;
+      const video = videoRef.current;
+      const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+      video.load();
+      detachHeroVideoStartRef.current?.();
+      detachHeroVideoStartRef.current = queueHeroVideoStart(video, isMobile);
     };
 
     window.addEventListener('online', handleOnline);
@@ -39,44 +106,17 @@ export default function HeroSection() {
     };
   }, [shouldLoadVideo]);
 
-  // ✅ CORREÇÃO: Garantir que o vídeo continue reproduzindo após remontagem
+  // Início no meio do clip (igual ao poster), sem autoPlay — evita frame inicial e “entrada” poster→vídeo
   React.useEffect(() => {
-    if (shouldLoadVideo && videoRef.current) {
-      const video = videoRef.current;
-      const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-      
-      // ✅ CORREÇÃO MOBILE: Tentar play imediatamente quando vídeo estiver pronto (readyState >= 2)
-      if (video.readyState >= 2) {
-        if (video.paused) {
-          const playPromise = video.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((err) => {
-              // ✅ CORREÇÃO MOBILE: Se autoplay falhar, tentar novamente após pequeno delay
-              if (isMobile) {
-                setTimeout(() => {
-                  if (video && video.paused) {
-                    video.play().catch(() => {});
-                  }
-                }, 100);
-              }
-            });
-          }
-        }
-      } else {
-        // ✅ CORREÇÃO MOBILE: Aguardar vídeo estar pronto antes de tentar play
-        const handleCanPlay = () => {
-          if (video && video.paused) {
-            video.play().catch(() => {});
-            video.removeEventListener('canplay', handleCanPlay);
-          }
-        };
-        video.addEventListener('canplay', handleCanPlay, { once: true });
-        
-        return () => {
-          video.removeEventListener('canplay', handleCanPlay);
-        };
-      }
-    }
+    if (!shouldLoadVideo || !videoRef.current) return;
+    const video = videoRef.current;
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+    detachHeroVideoStartRef.current?.();
+    detachHeroVideoStartRef.current = queueHeroVideoStart(video, isMobile);
+    return () => {
+      detachHeroVideoStartRef.current?.();
+      detachHeroVideoStartRef.current = null;
+    };
   }, [shouldLoadVideo]);
 
   // ✅ OTIMIZAÇÃO: Versão única 240p - sem upgrade progressivo (otimizado para mobile)
@@ -104,7 +144,7 @@ export default function HeroSection() {
               <video
                 ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover z-10"
-                autoPlay
+                poster={heroVideoPoster}
                 loop
                 muted
                 playsInline
@@ -120,7 +160,17 @@ export default function HeroSection() {
                 <source src={heroVideoSources.minimal} type="video/webm" />
                 <source src={heroVideoSources.original} type="video/webm" />
               </video>
-            ) : null}
+            ) : (
+              <img
+                src={heroVideoPoster}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover z-10"
+                width={640}
+                height={269}
+                decoding="async"
+                fetchPriority="high"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
           </div>
