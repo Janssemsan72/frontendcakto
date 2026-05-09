@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getPaymentCheckoutBaseUrl,
+  isExternalPaymentUrl,
+  isPaymentUrlStaleForCurrentGateway,
+} from "@/config/paymentCheckout";
 
 /**
- * Gera URL da Cakto para pagamento
+ * Gera URL do checkout externo (Cakto ou Hotmart conforme VITE_PAYMENT_GATEWAY).
  * @param orderId ID do pedido
  * @param email Email do cliente
  * @param whatsapp WhatsApp do cliente (normalizado)
@@ -16,7 +21,7 @@ export function generateCaktoUrl(
   language: string = 'pt',
   utms?: Record<string, string>
 ): string {
-  const CAKTO_PAYMENT_URL = 'https://pay.hotmart.com/O103476976K';
+  const checkoutBase = getPaymentCheckoutBaseUrl();
   
   // Normalizar WhatsApp (apenas números)
   let normalizedWhatsapp = whatsapp.replace(/\D/g, '');
@@ -67,11 +72,11 @@ export function generateCaktoUrl(
     });
   }
   
-  const finalUrl = `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
+  const finalUrl = `${checkoutBase}?${caktoParams.toString()}`;
   
   // Validação e log da URL final
-  if (!finalUrl.startsWith('https://pay.hotmart.com')) {
-    console.error('❌ [generateCaktoUrl] URL gerada não começa com https://pay.hotmart.com:', finalUrl);
+  if (!isExternalPaymentUrl(finalUrl)) {
+    console.error('❌ [generateCaktoUrl] URL gerada não é Cakto nem Hotmart:', finalUrl);
   } else {
     console.log('✅ [generateCaktoUrl] URL da Cakto gerada com sucesso:', {
       url: finalUrl,
@@ -210,28 +215,26 @@ export async function ensureCheckoutLinks(orderId: string): Promise<{
     const checkoutUrl = generateCheckoutUrl(orderId, order.quiz_id, checkoutToken, language);
     const editQuizUrl = generateEditQuizUrl(orderId, order.quiz_id, checkoutToken, language);
     
-    // Gerar ou usar URL da Cakto existente
+    // Gerar ou usar URL existente (regenerar se gateway do ambiente não bater com a URL salva)
     let caktoUrl = order.cakto_payment_url;
-    
-    if (!caktoUrl && order.customer_email && order.customer_whatsapp) {
-      // ✅ CORREÇÃO: generateCaktoUrl já normaliza o WhatsApp (adiciona prefixo 55)
-      // Passar WhatsApp original, a função vai normalizar
-      caktoUrl = generateCaktoUrl(
+
+    if (isPaymentUrlStaleForCurrentGateway(caktoUrl) && order.customer_email && order.customer_whatsapp) {
+      const generated = generateCaktoUrl(
         orderId,
         order.customer_email,
         order.customer_whatsapp,
         language
       );
-      
-      // Salvar URL da Cakto no pedido
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ cakto_payment_url: caktoUrl })
-        .eq('id', orderId);
-      
-      if (updateError) {
-        console.warn('Erro ao salvar cakto_payment_url:', updateError);
-        // Continuar mesmo assim, a URL foi gerada
+      if (generated) {
+        caktoUrl = generated;
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ cakto_payment_url: caktoUrl })
+          .eq('id', orderId);
+
+        if (updateError) {
+          console.warn('Erro ao salvar cakto_payment_url:', updateError);
+        }
       }
     }
     

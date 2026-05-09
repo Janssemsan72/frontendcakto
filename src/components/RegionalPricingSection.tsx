@@ -7,15 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Globe, Lock, Star, Zap, Clock, Shield, Music, ArrowRight, Download } from '@/utils/iconImports';
 import { LinkWithUtms } from '@/components/LinkWithUtms';
-
-// ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
-const getCaktoConfig = () => {
-  return {
-    url: 'https://pay.hotmart.com/O103476976K',
-    amount_cents: 4790,
-    price_display: 4790
-  };
-};
+import { getCaktoCheckoutConfig } from '@/config/paymentCheckout';
 
 interface RegionalPricing {
   region: string;
@@ -61,7 +53,7 @@ export default function RegionalPricingSection() {
       const forcedLang = currentLang || 'pt';
       
       // Sempre retorna apenas plano brasileiro com preço fixo R$ 47,90
-      const caktoConfig = getCaktoConfig();
+      const caktoConfig = getCaktoCheckoutConfig();
       const mockPricing = [
         {
           id: '1',

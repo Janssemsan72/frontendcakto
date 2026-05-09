@@ -12,132 +12,32 @@ const heroVideoSources = {
   minimal: '/video/musiclovaly-240p.webm',  // Versão padrão - carregamento INSTANTÂNEO (< 1s) - 163KB
   original: '/video/musiclovaly.webm'        // Vídeo original (fallback se versão comprimida não existir)
 };
-const heroPoster = '/images/collage-memories-new.webp';
 
 export default function HeroSection() {
-  // ✅ CORREÇÃO MOBILE: Detectar dispositivo mobile uma vez
-  const isMobileDevice = React.useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    return isMobile || (window.innerWidth <= 768 && isTouchDevice);
-  }, []);
-
-  // ✅ CORREÇÃO: Usar sessionStorage para preservar estado do vídeo entre remontagens
-  const [videoReady, setVideoReady] = React.useState(() => {
-    try {
-      return sessionStorage.getItem('hero_video_ready') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [shouldLoadVideo, setShouldLoadVideo] = React.useState(() => {
-    try {
-      return sessionStorage.getItem('hero_should_load_video') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [shouldLoadVideo, setShouldLoadVideo] = React.useState(true);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const mountedRef = React.useRef(true);
 
-  // ✅ OTIMIZAÇÃO: Listener para evento online (recarregar vídeo quando conexão voltar)
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Recarregar vídeo quando a conexão voltar após falha/offline
   React.useEffect(() => {
     const handleOnline = () => {
-      if (mountedRef.current && shouldLoadVideo && !videoReady && videoRef.current) {
-        // Recarregar vídeo quando conexão voltar
+      if (mountedRef.current && shouldLoadVideo && videoRef.current) {
         videoRef.current.load();
       }
     };
-    
+
     window.addEventListener('online', handleOnline);
     return () => {
       window.removeEventListener('online', handleOnline);
     };
-  }, [shouldLoadVideo, videoReady]);
-
-  React.useEffect(() => {
-    mountedRef.current = true;
-
-    let observer: PerformanceObserver | null = null;
-    let fallbackTimerId: number | null = null;
-    let idleCallbackId: number | null = null;
-
-    const startVideoLoad = () => {
-      if (!mountedRef.current) return;
-      try {
-        sessionStorage.setItem('hero_should_load_video', 'true');
-      } catch {}
-      setShouldLoadVideo(true);
-    };
-
-    const scheduleFallback = () => {
-      if (typeof window === "undefined") return;
-
-      const w = window as unknown as {
-        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-        cancelIdleCallback?: (id: number) => void;
-      };
-
-      // ✅ CORREÇÃO MOBILE: Timeout mais curto em mobile (500ms vs 2500ms)
-      const timeout = isMobileDevice ? 500 : 2500;
-
-      if (typeof w.requestIdleCallback === "function") {
-        idleCallbackId = w.requestIdleCallback(startVideoLoad, { timeout });
-        return;
-      }
-
-      fallbackTimerId = window.setTimeout(startVideoLoad, timeout);
-    };
-
-    // ✅ CORREÇÃO MOBILE: Em mobile, iniciar vídeo imediatamente após DOMContentLoaded
-    if (isMobileDevice) {
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        // DOM já está pronto, iniciar imediatamente
-        startVideoLoad();
-      } else {
-        // Aguardar DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', startVideoLoad, { once: true });
-        // Fallback de segurança
-        fallbackTimerId = window.setTimeout(startVideoLoad, 300);
-      }
-    } else {
-      // Desktop: usar PerformanceObserver como antes
-      if (typeof PerformanceObserver !== "undefined") {
-        try {
-        observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-              if (entry.entryType === "largest-contentful-paint") {
-                startVideoLoad();
-                observer?.disconnect();
-                observer = null;
-                return;
-              }
-            }
-          });
-          observer.observe({ entryTypes: ["largest-contentful-paint"] });
-          // ✅ CORREÇÃO: Timeout de segurança para PerformanceObserver (caso LCP não seja detectado)
-          fallbackTimerId = window.setTimeout(startVideoLoad, 3000);
-        } catch {
-          scheduleFallback();
-        }
-      } else {
-        scheduleFallback();
-      }
-    }
-
-    return () => {
-      mountedRef.current = false;
-      observer?.disconnect();
-      if (fallbackTimerId !== null) {
-        window.clearTimeout(fallbackTimerId);
-      }
-      const w = window as unknown as { cancelIdleCallback?: (id: number) => void };
-      if (idleCallbackId !== null && typeof w.cancelIdleCallback === "function") {
-        w.cancelIdleCallback(idleCallbackId);
-      }
-    };
-  }, []);
+  }, [shouldLoadVideo]);
 
   // ✅ CORREÇÃO: Garantir que o vídeo continue reproduzindo após remontagem
   React.useEffect(() => {
@@ -177,7 +77,7 @@ export default function HeroSection() {
         };
       }
     }
-  }, [shouldLoadVideo, videoReady]);
+  }, [shouldLoadVideo]);
 
   // ✅ OTIMIZAÇÃO: Versão única 240p - sem upgrade progressivo (otimizado para mobile)
 
@@ -200,73 +100,18 @@ export default function HeroSection() {
               }}
               aria-hidden="true"
             />
-            <picture>
-              <source 
-                srcSet={`${heroPoster} 1x, ${heroPoster} 2x`}
-                type="image/webp"
-                sizes="(max-width: 640px) 384px, 640px"
-              />
-              <img
-                className="absolute inset-0 w-full h-full object-cover z-10"
-                src={heroPoster}
-                alt="Memórias especiais"
-                width={640}
-                height={269}
-                sizes="(max-width: 640px) 384px, (max-width: 1024px) 640px, 1024px"
-                loading="eager"
-                decoding="async"
-                style={{ willChange: 'auto' }}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  const posterFallback = "/placeholder.svg";
-                  if (!target.src.endsWith(posterFallback)) target.src = posterFallback;
-                }}
-              />
-            </picture>
             {shouldLoadVideo ? (
               <video
                 ref={videoRef}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100" : "opacity-0"}`}
-                style={{ zIndex: 20 }} // ✅ CORREÇÃO: z-index maior que a imagem (z-10) para ficar por cima
-                poster={heroPoster}
+                className="absolute inset-0 w-full h-full object-cover z-10"
                 autoPlay
                 loop
                 muted
                 playsInline
-                preload={isMobileDevice ? "metadata" : "none"}
-                onCanPlay={() => {
-                  if (mountedRef.current) {
-                    try {
-                      sessionStorage.setItem('hero_video_ready', 'true');
-                    } catch {}
-                    setVideoReady(true);
-                  }
-                }}
-                onPlaying={() => {
-                  if (mountedRef.current) {
-                    try {
-                      sessionStorage.setItem('hero_video_ready', 'true');
-                    } catch {}
-                    setVideoReady(true);
-                    // ✅ CORREÇÃO: Forçar play se o vídeo estiver pausado após remontagem
-                    if (videoRef.current && videoRef.current.paused) {
-                      videoRef.current.play().catch(() => {});
-                    }
-                  }
-                }}
-                onPlay={() => {
-                  // ✅ CORREÇÃO: Garantir que o estado seja atualizado quando o vídeo começa a reproduzir
-                  if (mountedRef.current) {
-                    try {
-                      sessionStorage.setItem('hero_video_ready', 'true');
-                    } catch {}
-                    setVideoReady(true);
-                  }
-                }}
+                preload="auto"
                 onError={(e) => {
                   const target = e.target as HTMLVideoElement;
                   if (!mountedRef.current) return;
-                  setVideoReady(false);
                   setShouldLoadVideo(false);
                   if (videoRef.current === target) videoRef.current = null;
                 }}

@@ -17,4 +17,14 @@ if (missing.length > 0 && process.env.NODE_ENV === 'production') {
   );
 }
 
+// Checkout externo: Cakto usa URL padrão em código se VITE_CAKTO_PAYMENT_URL vazio; Hotmart idem com VITE_HOTMART_PAYMENT_URL.
+
+const relayFn = (process.env.VITE_AUTOMATEIA_RELAY_FUNCTION || '').trim();
+if (relayFn === 'n8n-webhook') {
+  console.warn(
+    '[validate-env] VITE_AUTOMATEIA_RELAY_FUNCTION=n8n-webhook → o front chama n8n-webhook para relay Automaeia. ' +
+      'Garanta deploy recente dessa Edge Function (bloco relay) ou remova a env para usar o padrão admin-automaeia-relay.'
+  );
+}
+
 process.exit(0);

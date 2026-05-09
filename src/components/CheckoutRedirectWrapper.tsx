@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getPaymentCheckoutBaseUrl, isExternalPaymentUrl } from '@/config/paymentCheckout';
 
 /**
  * Wrapper component que intercepta URLs do WhatsApp ANTES do Checkout ser renderizado
@@ -47,7 +48,7 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
     const shouldRedirect = (
       (isCheckoutRoute && (messageId || hasCheckoutParams) && orderId) ||
       (isHomeRoute && messageId && orderId)
-    ) && !window.location.href.includes('pay.hotmart.com');
+    ) && !isExternalPaymentUrl(window.location.href);
     
     if (shouldRedirect) {
       // Buscar pedido e redirecionar IMEDIATAMENTE
@@ -60,7 +61,11 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
           .single();
 
           if (!error && orderData && orderData.status === 'pending' && orderData.customer_email && orderData.customer_whatsapp) {
-            const CAKTO_PAYMENT_URL = 'https://pay.hotmart.com/O103476976K';
+            const CAKTO_PAYMENT_URL = getPaymentCheckoutBaseUrl();
+            if (!CAKTO_PAYMENT_URL) {
+              if (isDev) console.error('[CheckoutRedirectWrapper] URL de checkout externo ausente');
+              return;
+            }
             // ✅ CORREÇÃO: Remover sistema de locale - sempre usar português
             const locale = 'pt';
             

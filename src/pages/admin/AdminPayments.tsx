@@ -58,7 +58,7 @@ export default function AdminPayments() {
       status: order.status,
       plan: order.plan,
       amount_cents: order.amount_cents,
-      provider: order.provider || order.payment_provider || 'hotmart',
+      provider: order.provider || order.payment_provider || 'cakto',
       stripe_checkout_session_id: order.stripe_checkout_session_id,
       stripe_payment_intent_id: order.stripe_payment_intent_id,
       created_at: order.created_at,

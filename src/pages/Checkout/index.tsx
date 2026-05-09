@@ -33,6 +33,14 @@ import CheckoutPlanSelection from './components/CheckoutPlanSelection';
 import CheckoutSidebar from './components/CheckoutSidebar';
 import { useCheckoutForm } from './hooks/useCheckoutForm';
 import { useCheckoutAudio } from './hooks/useCheckoutAudio';
+import {
+  getCaktoCheckoutConfig,
+  getPaymentCheckoutBaseUrl,
+  getPaymentGateway,
+  isExternalPaymentHostname,
+  isExternalPaymentUrl,
+  isPaymentUrlStaleForCurrentGateway,
+} from '@/config/paymentCheckout';
 
 function saveGAClientIdForOrder(orderId: string) {
   const cid = getGAClientId();
@@ -112,28 +120,6 @@ type CheckoutOrderResponse = {
   error: { message?: string; code?: string; details?: string; hint?: string } | null;
 };
 
-// ✅ Configuração de preço fixo: R$ 47,90 (apenas Brasil, BRL)
-const getCaktoConfig = () => {
-  return {
-    url: 'https://pay.hotmart.com/O103476976K',
-    amount_cents: 4790,
-    price_display: 4790
-  };
-};
-
-// ✅ Função para selecionar gateway de pagamento
-// SEMPRE retorna 'hotmart' como método de pagamento padrão
-const getPaymentGateway = () => {
-  // Verificar variável de ambiente primeiro (permite override se necessário)
-  const envGateway = import.meta.env.VITE_PAYMENT_GATEWAY;
-  if (envGateway === 'hotmart') {
-    return envGateway;
-  }
-  
-  // Sempre usar Hotmart como padrão
-  return 'hotmart';
-};
-
 // ✅ OTIMIZAÇÃO: Preload de recursos críticos antes do componente renderizar
 if (typeof window !== 'undefined') {
   // Preload de componentes UI críticos para botões aparecerem imediatamente
@@ -149,13 +135,18 @@ if (typeof window !== 'undefined') {
 export default function Checkout() {
   logger.debug('Checkout component mounted');
   
-  // ✅ OTIMIZAÇÃO: Preconnect dinâmico ao gateway de pagamento no mount
+  // ✅ OTIMIZAÇÃO: Preconnect ao host do checkout externo ativo (Cakto ou Hotmart)
   useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'preconnect';
-    link.href = 'https://pay.hotmart.com';
-    link.crossOrigin = 'anonymous';
-    document.head.appendChild(link);
+    try {
+      const origin = new URL(getPaymentCheckoutBaseUrl()).origin;
+      const link = document.createElement('link');
+      link.rel = 'preconnect';
+      link.href = origin;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    } catch {
+      /* ignore */
+    }
   }, []);
   
   // ⚠️ CRÍTICO: Verificação IMEDIATA antes de qualquer processamento
@@ -172,8 +163,8 @@ export default function Checkout() {
   const { allTrackingParams: utmsForRedirect } = useUtmParams();
   
   useEffect(() => {
-    if (messageId && orderId && !window.location.href.includes('pay.hotmart.com') && !isRedirecting) {
-      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Hotmart ANTES de processar...');
+    if (messageId && orderId && !isExternalPaymentUrl(window.location.href) && !isRedirecting) {
+      logger.debug('REDIRECIONAMENTO IMEDIATO: URL do WhatsApp detectada (tem message_id), redirecionando para Cakto ANTES de processar...');
       setIsRedirecting(true);
       
       // Buscar pedido e redirecionar IMEDIATAMENTE
@@ -212,7 +203,7 @@ export default function Checkout() {
   // Sempre português - idiomas removidos
   const currentLanguage = 'pt';
 
-  const caktoBaseHref = getCaktoConfig().url;
+  const caktoBaseHref = getCaktoCheckoutConfig().url;
   
   // ✅ Função helper para obter caminho do quiz (sempre sem prefixo)
   const getQuizPath = () => '/quiz';
@@ -227,8 +218,7 @@ export default function Checkout() {
     language: string,
     utms: Record<string, string | null>
   ): string => {
-    const caktoConfig = getCaktoConfig();
-    const CAKTO_PAYMENT_URL = caktoConfig.url;
+    const CAKTO_PAYMENT_URL = getPaymentCheckoutBaseUrl();
     const origin = window.location.origin;
     const utmQuery = getUtmQueryString(false);
     // ✅ CORREÇÃO: Padronizar redirect_url para /payment-success (sem barra antes de success)
@@ -297,12 +287,11 @@ export default function Checkout() {
         return false;
       }
 
-      // Verificar se já existe URL da Cakto salva
+      // URL salva deve corresponder ao gateway deste deploy (Cakto ou Hotmart)
       let caktoUrl = orderData.cakto_payment_url;
-      
-      if (!caktoUrl || caktoUrl.trim() === '') {
-        // Gerar nova URL da Cakto
-        logger.debug('redirectToCakto: Gerando nova URL da Cakto...');
+
+      if (isPaymentUrlStaleForCurrentGateway(caktoUrl)) {
+        logger.debug('redirectToCakto: Gerando nova URL de checkout externo...');
         const safeUtms = utmsParam || utms || {};
         caktoUrl = generateCaktoUrl(
           orderData.id,
@@ -311,7 +300,12 @@ export default function Checkout() {
           language,
           safeUtms
         );
-        
+
+        if (!caktoUrl || !isExternalPaymentUrl(caktoUrl)) {
+          logger.error('redirectToCakto: URL de checkout inválida', { caktoUrl });
+          return false;
+        }
+
         // Salvar URL no pedido
         logger.debug('redirectToCakto: Salvando URL da Cakto no pedido...');
         const { error: updateError } = await supabase
@@ -329,15 +323,14 @@ export default function Checkout() {
         logger.debug('redirectToCakto: Usando URL da Cakto salva');
       }
       
-      // ✅ CORREÇÃO: Validar URL antes de redirecionar
-      if (!caktoUrl || !caktoUrl.startsWith('http')) {
-        logger.error('redirectToCakto: URL inválida', { caktoUrl });
+      // ✅ Validar URL antes de redirecionar (Cakto ou Hotmart)
+      if (!caktoUrl || !isExternalPaymentUrl(caktoUrl)) {
+        logger.error('redirectToCakto: URL inválida ou não é checkout externo', { caktoUrl });
         return false;
       }
 
-      // ✅ CORREÇÃO: Verificar se não estamos já na Cakto
-      if (window.location.hostname === 'pay.hotmart.com') {
-        logger.debug('redirectToCakto: Já estamos na Cakto, não redirecionar novamente');
+      if (isExternalPaymentHostname(window.location.hostname)) {
+        logger.debug('redirectToCakto: Já estamos no checkout externo, não redirecionar novamente');
         return true;
       }
 
@@ -389,7 +382,7 @@ export default function Checkout() {
 
   // Planos fixos: apenas Brasil, BRL, R$ 47,90
   const getPlansForLanguage = (): Plan[] => {
-    const caktoConfig = getCaktoConfig();
+    const caktoConfig = getCaktoCheckoutConfig();
     
     // Sempre retorna apenas 1 plano BRL
     return [
@@ -503,7 +496,7 @@ export default function Checkout() {
     if (!normEmail || !normWhatsapp) return;
 
     earlyOrderQuizIdRef.current = quiz.id;
-    const caktoConfig = getCaktoConfig();
+    const caktoConfig = getCaktoCheckoutConfig();
 
     void (async () => {
       const { data: existing } = await supabase.from('orders').select('id').eq('quiz_id', quiz.id).limit(1).maybeSingle();
@@ -512,14 +505,15 @@ export default function Checkout() {
         logger.debug('✅ [Checkout] Pedido já existe para este quiz', { order_id: existing.id });
         return;
       }
+      const paymentGwEarly = getPaymentGateway();
       const payload = {
         quiz_id: quiz.id,
         user_id: null,
         plan: selectedPlan as 'standard' | 'express',
         amount_cents: caktoConfig.amount_cents,
         status: 'pending' as const,
-        provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
-        payment_provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
+        provider: paymentGwEarly as 'hotmart' | 'cakto' | 'stripe',
+        payment_provider: paymentGwEarly as 'hotmart' | 'cakto' | 'stripe',
         customer_email: normEmail,
         customer_whatsapp: normWhatsapp,
         transaction_id: null,
@@ -555,7 +549,7 @@ export default function Checkout() {
       
       // ⚠️ CRÍTICO: Se a URL atual é da Cakto, não processar nada - deixar o navegador seguir naturalmente
       // Isso evita que o React Router intercepte URLs externas da Cakto
-      if (window.location.hostname === 'pay.hotmart.com') {
+      if (isExternalPaymentHostname(window.location.hostname)) {
         logger.debug('URL da Cakto detectada no useEffect principal - não processando lógica de checkout interno', {
           hostname: window.location.hostname,
           url: window.location.href
@@ -593,7 +587,7 @@ export default function Checkout() {
       logger.debug('Processando localStorage e URL...');
       
       // ⚠️ VERIFICAÇÃO ADICIONAL: Se a URL atual é da Cakto, não processar nada
-      if (window.location.hostname === 'pay.hotmart.com') {
+      if (isExternalPaymentHostname(window.location.hostname)) {
         logger.debug('URL da Cakto detectada em processLocalStorage - não processando');
         setLoading(false);
         return;
@@ -610,7 +604,7 @@ export default function Checkout() {
       
       // ⚠️ CRÍTICO: Se a URL contém message_id (veio do WhatsApp), redirecionar IMEDIATAMENTE para Cakto
       // Isso evita que o React Router processe como checkout interno
-      if (messageId && orderId && !window.location.href.includes('pay.hotmart.com')) {
+      if (messageId && orderId && !isExternalPaymentUrl(window.location.href)) {
         logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando IMEDIATAMENTE para Cakto...');
         setLoading(true);
         
@@ -746,7 +740,7 @@ export default function Checkout() {
           
           // Rastrear visualização do checkout (silencioso)
           try {
-            const caktoConf = getCaktoConfig();
+            const caktoConf = getCaktoCheckoutConfig();
             trackBeginCheckout('', caktoConf.amount_cents / 100, 'BRL');
           } catch (trackError) {
             logger.warn('⚠️ [Checkout] Erro ao rastrear evento:', trackError);
@@ -768,7 +762,7 @@ export default function Checkout() {
       
       // ✅ PRIORIDADE 0.5: Se restore=true E a URL NÃO é da Cakto, verificar se deve redirecionar para Cakto
       // ⚠️ CRÍTICO: Se a URL contém parâmetros do checkout interno mas deveria ir para Cakto, redirecionar
-      if (restore === 'true' && orderId && quizId && !window.location.href.includes('pay.hotmart.com')) {
+      if (restore === 'true' && orderId && quizId && !isExternalPaymentUrl(window.location.href)) {
         // Verificar se há message_id (indica que veio do WhatsApp)
         const messageId = urlParams.get('message_id');
         if (messageId || auto === 'true') {
@@ -1057,7 +1051,7 @@ export default function Checkout() {
       if (restore === 'true' && orderId && quizId) {
         const messageIdFromUrl = urlParams.get('message_id');
         // Se tem message_id, significa que veio do WhatsApp e deve ir direto para Cakto
-        if (messageIdFromUrl && !window.location.href.includes('pay.hotmart.com')) {
+        if (messageIdFromUrl && !isExternalPaymentUrl(window.location.href)) {
           logger.debug('URL do WhatsApp detectada (tem message_id), redirecionando para Cakto...');
           setLoading(true);
           
@@ -1854,7 +1848,7 @@ export default function Checkout() {
     // ✅ O botão ficará em loading até o redirecionamento acontecer
     setProcessing(true);
 
-    // ✅ Determinar gateway (sempre Hotmart)
+    // ✅ Determinar gateway (checkout externo Cakto)
     const selectedGateway = getPaymentGateway();
     
     logger.debug('🌍 [Checkout] Sistema de pagamento:', {
@@ -1950,7 +1944,7 @@ export default function Checkout() {
         return getOrCreateQuizSessionId();
       })();
       
-      const caktoConfigForRedirect = getCaktoConfig();
+      const caktoConfigForRedirect = getCaktoCheckoutConfig();
       const amountCentsForRedirect = caktoConfigForRedirect.amount_cents;
       
       // ✅ OTIMIZAÇÃO ULTRA-RÁPIDA: Gerar URL do gateway ANTES de processar banco
@@ -1991,6 +1985,7 @@ export default function Checkout() {
           checkoutUrl: finalRedirectUrl,
           value: plan?.price ?? 0,
           currency: 'BRL',
+          payment_provider: getPaymentGateway(),
         });
         clearQuizSessionId();
         window.location.href = finalRedirectUrl;
@@ -2019,7 +2014,7 @@ export default function Checkout() {
         email: normalizedEmail,
         whatsapp: normalizedWhatsApp,
         plan: selectedPlan,
-        provider: 'hotmart'
+        provider: getPaymentGateway(),
       });
       
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -2031,8 +2026,8 @@ export default function Checkout() {
             customer_whatsapp: normalizedWhatsApp,
             plan: selectedPlan,
             amount_cents: amountCentsForRedirect,
-        provider: 'hotmart',
-            transaction_id: transactionId
+            provider: getPaymentGateway(),
+            transaction_id: transactionId,
           };
           
       // ✅ RESTAURAR FLUXO ANTIGO: Criar quiz e pedido diretamente (como era antes)
@@ -2147,20 +2142,21 @@ export default function Checkout() {
         }
         
         // PASSO 3: Criar pedido diretamente (fluxo antigo - como era antes)
+        const paymentGwOrder = getPaymentGateway();
         logger.debug('📦 [Checkout] Criando pedido diretamente no banco...', {
-          provider: 'hotmart',
+          provider: paymentGwOrder,
           email: normalizedEmail,
-          quiz_id: quizData.id
+          quiz_id: quizData.id,
         });
-        
+
         const orderPayload = {
           quiz_id: quizData.id,
           user_id: null,
           plan: selectedPlan as 'standard' | 'express',
           amount_cents: amountCentsForRedirect,
           status: 'pending' as const,
-          provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
-          payment_provider: 'hotmart' as 'hotmart' | 'cakto' | 'stripe',
+          provider: paymentGwOrder as 'hotmart' | 'cakto' | 'stripe',
+          payment_provider: paymentGwOrder as 'hotmart' | 'cakto' | 'stripe',
           customer_email: normalizedEmail,
           customer_whatsapp: normalizedWhatsApp as string,
           transaction_id: transactionId || null,
@@ -2171,7 +2167,7 @@ export default function Checkout() {
           email: normalizedEmail.substring(0, 10) + '...',
           plan: selectedPlan,
           amount_cents: amountCentsForRedirect,
-          provider: 'hotmart'
+          provider: paymentGwOrder,
         });
         
         const { data: orderData, error: orderError } = (await supabase
@@ -2219,7 +2215,7 @@ export default function Checkout() {
         logger.info('✅ [Checkout] Pedido criado com sucesso no banco!', {
           order_id: orderId,
           quiz_id: quizData.id,
-          provider: 'hotmart',
+          provider: paymentGwOrder,
           status: orderData.status,
           customer_email: orderData.customer_email,
           customer_whatsapp: orderData.customer_whatsapp
@@ -2324,6 +2320,7 @@ export default function Checkout() {
         checkoutUrl: redirectUrl,
         value: plan?.price ?? 0,
         currency: 'BRL',
+        payment_provider: paymentGatewayForRedirect,
       });
 
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)

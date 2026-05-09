@@ -258,14 +258,16 @@ export interface RedirectToPaymentParams {
   checkoutUrl?: string;
   value?: number;
   currency?: string;
+  /** 'cakto' | 'hotmart' conforme deploy */
+  payment_provider?: string;
 }
 
 export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
-  const { orderId, checkoutUrl, value, currency } = params;
+  const { orderId, checkoutUrl, value, currency, payment_provider } = params;
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
-    payment_provider: 'hotmart',
+    payment_provider: payment_provider ?? 'cakto',
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
     value: value ?? 0,
     currency: currency || 'BRL',

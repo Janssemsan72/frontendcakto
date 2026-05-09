@@ -25,9 +25,9 @@ const AUTOMATEIA_RELEASE_WEBHOOK =
 
 /**
  * Repassa o JSON ao Automaeia pelo servidor (Edge), evitando CORS.
- * Não confundir com a função `n8n-webhook`: ela só aceita `{ order_id, event_type: pending_7min|paid }` (funnel/pago).
+ * Não confundir com a função `n8n-webhook` usada só para funil: `{ order_id, event_type: pending_7min|paid }`.
+ * Padrão: `admin-automaeia-relay`. `n8n-webhook` só se `VITE_AUTOMATEIA_RELAY_FUNCTION` estiver definida no host.
  */
-/** Edge que faz POST server-side para o Automaeia (evita CORS). */
 const AUTOMATEIA_RELAY_FUNCTION =
   (import.meta.env.VITE_AUTOMATEIA_RELAY_FUNCTION as string | undefined)?.trim() ||
   'admin-automaeia-relay';
