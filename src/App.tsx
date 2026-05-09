@@ -15,6 +15,7 @@ import RouterSync from "@/components/RouterSync";
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
 import { devLog, isDevVerbose } from "@/utils/debug/devLogger";
 import { ensureE2EAdminStorageAuthorized, isE2EAdminFlagEnabled } from "@/utils/adminE2EBypass";
+import MetaPixelProvider from "@/components/MetaPixelProvider";
 
 // ✅ OTIMIZAÇÃO PERFORMANCE: Rotas não-admin carregadas normalmente
 const CheckoutProcessing = lazyWithRetry(() => import("./pages/CheckoutProcessing"));
@@ -51,7 +52,9 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: true }}>
-        <AppContent />
+        <MetaPixelProvider>
+          <AppContent />
+        </MetaPixelProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

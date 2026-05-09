@@ -5,6 +5,7 @@ import { CheckCircle2, MessageCircle, ChevronDown } from '@/utils/iconImports';
 import { useUtmParams } from '@/hooks/useUtmParams';
 import { clearQuizSessionId } from '@/utils/quizSync';
 import { trackPageView } from '@/utils/gtmTracking';
+import { firePurchasePixelOnce } from '@/utils/meta-tracking';
 import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/components/Logo';
 
@@ -13,6 +14,7 @@ interface OrderData {
   customer_email?: string;
   customer_whatsapp?: string;
   status?: string;
+  amount_cents?: number;
 }
 
 const WHATSAPP_BASE = 'https://api.whatsapp.com/send/?phone=558594377151&text=Ol%C3%A1%21+Meu+pagamento+foi+processado.+Gostaria+de+acompanhar+o+status+do+meu+pedido.&type=phone_number&app_absent=0';
@@ -65,12 +67,21 @@ export default function PaymentSuccess() {
           // Buscar dados do pedido no Supabase
           const { data, error } = await supabase
             .from('orders')
-            .select('id, customer_email, customer_whatsapp, status')
+            .select('id, customer_email, customer_whatsapp, status, amount_cents')
             .eq('id', orderId)
             .single();
 
           if (!error && data) {
             setOrderData(data);
+            // Fire Meta Purchase pixel (deduplicado)
+            if (data.status === 'paid') {
+              firePurchasePixelOnce({
+                id: data.id,
+                status: data.status,
+                amount_cents: data.amount_cents || 0,
+                currency: 'BRL',
+              });
+            }
           } else {
             // ✅ OTIMIZAÇÃO: Remover console.warn em produção
             if (process.env.NODE_ENV === 'development') {

@@ -155,6 +155,7 @@ export {
   // Analytics
   Scroll,
   Bug,
+  Target,
 } from 'lucide-react';
 
 /**

@@ -11,6 +11,7 @@ import {
   CheckSquare,
   Users,
   BarChart3,
+  Target,
 } from "@/utils/iconImports";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const adminMenuItems: MenuItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, permissionKey: "dashboard" },
   { title: "Métricas de Quiz", url: "/admin/quiz-metrics", icon: BarChart3, permissionKey: "dashboard" },
   { title: "Pedidos", url: "/admin/orders", icon: ShoppingCart, permissionKey: "orders" },
+  { title: "Meta Ads", url: "/admin/meta-ads", icon: Target, permissionKey: "dashboard" },
   { title: "Músicas", url: "/admin/songs", icon: Music, permissionKey: "songs" },
   { title: "Gerenciar Letras", url: "/admin/lyrics", icon: CheckSquare, permissionKey: "lyrics" },
   { title: "Liberações", url: "/admin/releases", icon: Clock, permissionKey: "releases" },

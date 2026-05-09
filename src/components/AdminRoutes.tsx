@@ -27,6 +27,7 @@ const AdminPayments = lazyWithRetry(() => import("../pages/admin/AdminPayments")
 const AdminQuizMetrics = lazyWithRetry(() => import("../pages/admin/AdminQuizMetrics"));
 const AdminAuth = lazyWithRetry(() => import("../pages/AdminAuth"));
 const AdminDashboardRedirect = lazyWithRetry(() => import("./admin/AdminDashboardRedirect"));
+const AdminMetaAds = lazyWithRetry(() => import("../pages/admin/AdminMetaAds"));
 
 const AdminRouteFallback = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -129,6 +130,13 @@ export default function AdminRoutes() {
               <Suspense fallback={null}>
                 <ProtectedAdminRoute requiredPermission="dashboard">
                   <AdminQuizMetrics />
+                </ProtectedAdminRoute>
+              </Suspense>
+            } />
+            <Route path="meta-ads" element={
+              <Suspense fallback={null}>
+                <ProtectedAdminRoute requiredPermission="dashboard">
+                  <AdminMetaAds />
                 </ProtectedAdminRoute>
               </Suspense>
             } />
