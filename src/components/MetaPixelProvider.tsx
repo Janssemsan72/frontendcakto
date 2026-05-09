@@ -56,13 +56,11 @@ export default function MetaPixelProvider({ children }: { children: React.ReactN
 
         const fbq = (window as any).fbq;
 
-        // 3) Init each pixel
+        // 3) Init and track each pixel explicitly
         for (const id of pixel_ids) {
           fbq('init', id);
+          fbq('trackSingle', id, 'PageView');
         }
-
-        // 4) Fire browser PageView
-        fbq('track', 'PageView');
 
         // 5) Fire server-side CAPI PageView
         fireServerPageView();
