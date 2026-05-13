@@ -11,4 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_META_PIXEL_ID?: string;
   /** Vários pixels separados por vírgula (fallback + merge com Supabase). */
   readonly VITE_META_PIXEL_IDS?: string;
+  /** `1` / `true`: desativa pushes ao dataLayer (GTM). */
+  readonly VITE_GTM_DISABLE?: string;
+  /** `1` / `true`: permite GTM em localhost (por defeito desligado). */
+  readonly VITE_GTM_ENABLE_ON_LOCALHOST?: string;
 }

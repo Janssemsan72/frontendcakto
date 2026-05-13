@@ -10,6 +10,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { PublicErrorBoundary } from "@/components/PublicErrorBoundary";
 import PublicRoutes from "@/components/PublicRoutes";
 import RouterSync from "@/components/RouterSync";
+import { GtmRouteTracker } from "@/components/GtmRouteTracker";
 // ✅ OTIMIZAÇÃO: i18n carregado de forma diferida no main.tsx para não bloquear FCP
 // import '@/i18n'; // Removido - carregado diferidamente
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
@@ -286,6 +287,7 @@ const AppContent = () => {
         </>
       )}
       <RouterSync>
+        <GtmRouteTracker />
         <PublicErrorBoundary>
           <Suspense fallback={null}>
             <Routes>

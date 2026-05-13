@@ -68,6 +68,8 @@ test-results/
 # Exceções específicas já cobertas acima
 
 # Diretórios Duplicados e Backups (NÃO COMMITAR)
+# Backend Hotmart (repositório Git separado; clone fica ao lado ou aqui localmente)
+backendmusiclovelyhotmart/
 frontend/
 frontend/frontend/
 */frontend/frontend/

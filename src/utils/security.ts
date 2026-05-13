@@ -13,6 +13,8 @@ export const ALLOWED_ORIGINS = [
   'https://www.musiclovely.com',
   'https://musiclovely.com.br',
   'https://www.musiclovely.com.br',
+  'https://musiclovely.online',
+  'https://www.musiclovely.online',
   'http://localhost:8084',
   'http://localhost:5173',
   'http://localhost:8089',

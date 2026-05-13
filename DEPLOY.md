@@ -98,6 +98,7 @@ Se o repositório estiver conectado ao Vercel:
    - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel no browser)
    - `VITE_PAYMENT_GATEWAY` — omitir = Hotmart; `cakto` para Cakto
    - `VITE_HOTMART_PAYMENT_URL` / `VITE_CAKTO_PAYMENT_URL` (opcional; checkout externo)
+   - `VITE_GTM_DISABLE` / `VITE_GTM_ENABLE_ON_LOCALHOST` (opcional; GTM)
 
 ### Erro: "fatal: remote origin already exists"
 ```bash

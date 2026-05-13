@@ -8,6 +8,7 @@ declare global {
 
 const USER_DATA_KEY = 'ml_user_data';
 
+/** Base: `musiclovely-cakto - hotmart 2026` (sem env opcionais). */
 function isTrackingEnabled(): boolean {
   const path = window.location.pathname || '';
   if (path.startsWith('/admin') || path.startsWith('/app/admin')) return false;
@@ -260,16 +261,14 @@ export interface RedirectToPaymentParams {
   checkoutUrl?: string;
   value?: number;
   currency?: string;
-  /** 'cakto' | 'hotmart' conforme deploy */
-  payment_provider?: string;
 }
 
 export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
-  const { orderId, checkoutUrl, value, currency, payment_provider } = params;
+  const { orderId, checkoutUrl, value, currency } = params;
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
-    payment_provider: payment_provider ?? getPaymentGateway(),
+    payment_provider: getPaymentGateway(),
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
     value: value ?? 0,
     currency: currency || 'BRL',

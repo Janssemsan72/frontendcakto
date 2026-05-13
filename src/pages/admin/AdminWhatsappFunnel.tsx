@@ -20,6 +20,14 @@ import { ptBR } from "date-fns/locale";
 import { ensureCheckoutLinks, generateCaktoUrl } from "@/utils/checkoutLinks";
 import { isExternalPaymentUrl } from "@/config/paymentCheckout";
 
+/** Checkout interno Musiclovely (domínios de produção, ex. .com.br / .online). */
+function isInternalMusiclovelyCheckoutUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const hostOk =
+    url.includes("musiclovely.com") || url.includes("musiclovely.online");
+  return hostOk && url.includes("/checkout");
+}
+
 interface WhatsappFunnel {
   id: string;
   order_id: string;
@@ -1481,9 +1489,7 @@ export default function AdminWhatsappFunnel() {
       
       if (orderCheck) {
         // ⚠️ VALIDAÇÃO: Se URL salva é do checkout interno, gerar nova URL da Cakto
-        if (orderCheck.cakto_payment_url && 
-            orderCheck.cakto_payment_url.includes('musiclovely.com') && 
-            orderCheck.cakto_payment_url.includes('/checkout')) {
+        if (isInternalMusiclovelyCheckoutUrl(orderCheck.cakto_payment_url)) {
           // Buscar idioma do quiz
           const quizId = funnel.quiz_id || orderCheck.quiz_id;
           
@@ -1529,7 +1535,7 @@ export default function AdminWhatsappFunnel() {
           throw new Error(`URL da Cakto retornada não é válida: ${linksResult.caktoUrl.substring(0, 100)}`);
         }
         
-        if (linksResult.caktoUrl.includes('musiclovely.com') && linksResult.caktoUrl.includes('/checkout')) {
+        if (isInternalMusiclovelyCheckoutUrl(linksResult.caktoUrl)) {
           throw new Error(`URL da Cakto retornada é do checkout interno: ${linksResult.caktoUrl.substring(0, 100)}`);
         }
       }
@@ -1938,9 +1944,7 @@ export default function AdminWhatsappFunnel() {
         
         if (order) {
           // Se URL salva é do checkout interno, gerar nova
-          if (order.cakto_payment_url && 
-              order.cakto_payment_url.includes('musiclovely.com') && 
-              order.cakto_payment_url.includes('/checkout')) {
+          if (isInternalMusiclovelyCheckoutUrl(order.cakto_payment_url)) {
             console.warn(`⚠️ [AdminWhatsappFunnel] Funil ${funnel.id}: URL salva é do checkout interno, gerando nova...`);
             
             // Buscar idioma do quiz
@@ -1985,7 +1989,7 @@ export default function AdminWhatsappFunnel() {
             throw new Error(`URL da Cakto inválida para funil ${f.id}`);
           }
           
-          if (linksResult.caktoUrl.includes('musiclovely.com') && linksResult.caktoUrl.includes('/checkout')) {
+          if (isInternalMusiclovelyCheckoutUrl(linksResult.caktoUrl)) {
             console.error(`❌ [AdminWhatsappFunnel] Funil ${f.id}: URL da Cakto é do checkout interno:`, linksResult.caktoUrl.substring(0, 100));
             throw new Error(`URL da Cakto é do checkout interno para funil ${f.id}`);
           }
@@ -2346,11 +2350,11 @@ export default function AdminWhatsappFunnel() {
                         console.log('📝 URL da Cakto salva no banco:', {
                           url: order.cakto_payment_url,
                           startsWithCakto: isExternalPaymentUrl(order.cakto_payment_url),
-                          startsWithCheckout: order.cakto_payment_url.includes('musiclovely.com') && order.cakto_payment_url.includes('/checkout'),
+                          startsWithCheckout: isInternalMusiclovelyCheckoutUrl(order.cakto_payment_url),
                         });
                         
                         // Se a URL salva está incorreta (checkout interno), vamos gerar nova
-                        if (order.cakto_payment_url.includes('musiclovely.com') && order.cakto_payment_url.includes('/checkout')) {
+                        if (isInternalMusiclovelyCheckoutUrl(order.cakto_payment_url)) {
                           console.warn('⚠️ [AdminWhatsappFunnel] URL salva no banco está incorreta (checkout interno), gerando nova URL da Cakto');
                         }
                       }
@@ -2382,7 +2386,7 @@ export default function AdminWhatsappFunnel() {
                       }
                       
                       // Verificar se não é checkout interno
-                      if (caktoUrl.includes('musiclovely.com') && caktoUrl.includes('/checkout')) {
+                      if (isInternalMusiclovelyCheckoutUrl(caktoUrl)) {
                         console.error('❌ [AdminWhatsappFunnel] URL gerada é do checkout interno, não da Cakto!');
                         throw new Error('URL gerada é do checkout interno ao invés da Cakto');
                       }

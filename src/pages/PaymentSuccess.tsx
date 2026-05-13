@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, MessageCircle, ChevronDown } from '@/utils/iconImports';
 import { useUtmParams } from '@/hooks/useUtmParams';
 import { clearQuizSessionId } from '@/utils/quizSync';
-import { trackPageView } from '@/utils/gtmTracking';
+import { trackPageView, trackPurchaseOnce } from '@/utils/gtmTracking';
 import { firePurchasePixelOnce } from '@/utils/meta-tracking';
 import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/components/Logo';
@@ -76,6 +76,12 @@ export default function PaymentSuccess() {
             // Fire Meta Purchase pixel (deduplicado)
             if (data.status === 'paid') {
               firePurchasePixelOnce({
+                id: data.id,
+                status: data.status,
+                amount_cents: data.amount_cents || 0,
+                currency: 'BRL',
+              });
+              trackPurchaseOnce({
                 id: data.id,
                 status: data.status,
                 amount_cents: data.amount_cents || 0,

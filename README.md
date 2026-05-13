@@ -44,6 +44,10 @@ VITE_API_URL=https://web-production-83be.up.railway.app
 # VITE_PAYMENT_GATEWAY=cakto
 # VITE_HOTMART_PAYMENT_URL=https://pay.hotmart.com/SUA_OFERTA  # opcional (senão usa default do código)
 # VITE_CAKTO_PAYMENT_URL=https://pay.cakto.com.br/...  # opcional quando gateway for cakto
+
+# GTM / dataLayer: em localhost os pushes ficam desligados por defeito
+# VITE_GTM_ENABLE_ON_LOCALHOST=1
+# VITE_GTM_DISABLE=1   # força desligar em qualquer host (ex.: preview de testes)
 ```
 
 **Onde obter a chave anon:**
@@ -118,6 +122,7 @@ O projeto está configurado para deploy no Vercel. O arquivo `vercel.json` cont�
    - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel)
    - `VITE_PAYMENT_GATEWAY` — omitir = **Hotmart**; `cakto` para checkout Cakto
    - `VITE_HOTMART_PAYMENT_URL` / `VITE_CAKTO_PAYMENT_URL` (opcional; URLs de checkout)
+   - `VITE_GTM_DISABLE` / `VITE_GTM_ENABLE_ON_LOCALHOST` (opcional; controlo do dataLayer)
 3. O deploy será automático a cada push
 
 ### Build Command

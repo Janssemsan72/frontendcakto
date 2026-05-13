@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
 
-
+    <!-- Google Tag Manager (Stape server-side) — base: hotmart 2026 -->
+    <!-- ✅ Não injectar GTM em /admin* (pathname no primeiro paint) -->
+    <!-- O script GTM já tem j.async=true internamente -->
+    <script>(function(w,d,s,l,i){try{var p=(w.location&&w.location.pathname)||'';if(p==='/admin'||p.indexOf('/admin/')===0||p.indexOf('/app/admin')===0)return;}catch(e){}
+    w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s);j.async=true;j.src='https://musiclovely.online/63grxzipls.js?'+i;
+    f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
+    '9b=GghNLi41XzM4PDMkLjYwQQVRQkdLXhYJTgEFGhMbHggFCRwQVBsdCg%3D%3D');</script>
+    <!-- End Google Tag Manager -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Musiclovely - Crie músicas personalizadas para quem você ama</title>
@@ -135,12 +144,14 @@
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
     <link rel="preconnect" href="https://pay.hotmart.com" crossorigin />
-    
-    <!-- Preconnect para Facebook (crítico para tracking) -->
+    <!-- Preconnect para GTM Stape e Facebook (críticos para tracking) -->
+    <link rel="preconnect" href="https://musiclovely.online" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
     <!-- ✅ OTIMIZAÇÃO: DNS prefetch para domínios de terceiros (menos críticos) -->
     <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
+    <link rel="dns-prefetch" href="https://musiclovely.online" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://pay.hotmart.com" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
@@ -225,7 +236,10 @@
     </script>
   </head>
   <body>
-
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://musiclovely.online/ns.html?id=GTM-TKPCMTNB"
+    height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
     <div id="root"></div>
     <!-- ✅ OTIMIZAÇÃO: Script principal será injetado pelo Vite durante o build -->

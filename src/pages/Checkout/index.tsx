@@ -1994,7 +1994,6 @@ export default function Checkout() {
           checkoutUrl: finalRedirectUrl,
           value: plan?.price ?? 0,
           currency: 'BRL',
-          payment_provider: getPaymentGateway(),
         });
         // ✅ Meta Pixel: InitiateCheckout
         safeTrackCheckout({
@@ -2336,7 +2335,6 @@ export default function Checkout() {
         checkoutUrl: redirectUrl,
         value: plan?.price ?? 0,
         currency: 'BRL',
-        payment_provider: paymentGatewayForRedirect,
       });
       // ✅ Meta Pixel: InitiateCheckout no momento do redirect
       safeTrackCheckout({
