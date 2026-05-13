@@ -40,8 +40,8 @@ VITE_API_URL=https://web-production-83be.up.railway.app
 # VITE_META_PIXEL_ID=123456789012345
 # VITE_META_PIXEL_IDS=111111111111111,222222222222222
 
-# Checkout externo: omitir ou `cakto` (padrão); use `hotmart` para página de pagamento Hotmart
-# VITE_PAYMENT_GATEWAY=hotmart
+# Checkout externo: padrão **Hotmart** (sem env). Para Cakto: VITE_PAYMENT_GATEWAY=cakto
+# VITE_PAYMENT_GATEWAY=cakto
 # VITE_HOTMART_PAYMENT_URL=https://pay.hotmart.com/SUA_OFERTA  # opcional (senão usa default do código)
 # VITE_CAKTO_PAYMENT_URL=https://pay.cakto.com.br/...  # opcional quando gateway for cakto
 ```
@@ -116,7 +116,7 @@ O projeto está configurado para deploy no Vercel. O arquivo `vercel.json` cont�
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_API_URL` (opcional)
    - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel)
-   - `VITE_PAYMENT_GATEWAY` = `hotmart` ou `cakto` (opcional; padrão `cakto`)
+   - `VITE_PAYMENT_GATEWAY` — omitir = **Hotmart**; `cakto` para checkout Cakto
    - `VITE_HOTMART_PAYMENT_URL` / `VITE_CAKTO_PAYMENT_URL` (opcional; URLs de checkout)
 3. O deploy será automático a cada push
 

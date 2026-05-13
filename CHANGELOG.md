@@ -14,13 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Hero (`HeroSection.tsx`): poster e fallback estáticos com frame ~50% do clip (`public/video/musiclovaly-poster.webp`); reprodução começa após seek para o meio (sem `autoPlay` desde t=0) para alinhar com o poster e reduzir efeito de entrada; retoma após `online` + `load()`; `preload="auto"` e `loop` mantidos.
 - `public/favicon.svg`: ícone com coração + nota musical em preto sobre fundo lilás-claro arredondado (marca antiga do site), em vez do ícone só com nota em fundo marrom.
-- Checkout dual **Cakto / Hotmart** (mesmo banco): [`src/config/paymentCheckout.ts`](src/config/paymentCheckout.ts) com default Cakto `https://pay.cakto.com.br/d877u4t_665160`, default Hotmart `https://pay.hotmart.com/O103476976K`, `VITE_PAYMENT_GATEWAY=hotmart` para deploy legado, overrides `VITE_CAKTO_PAYMENT_URL` / `VITE_HOTMART_PAYMENT_URL`; `provider`/`payment_provider` e URLs seguem o gateway ativo; regeneração de `cakto_payment_url` quando o domínio salvo não bate com o ambiente.
+- Checkout dual **Cakto / Hotmart** (mesmo banco): [`src/config/paymentCheckout.ts`](src/config/paymentCheckout.ts) com defaults de URL (`VITE_CAKTO_PAYMENT_URL` / `VITE_HOTMART_PAYMENT_URL` ou fallbacks em código); **gateway padrão Hotmart** se `VITE_PAYMENT_GATEWAY` ausente; `VITE_PAYMENT_GATEWAY=cakto` força Cakto; regeneração de `cakto_payment_url` quando o host salvo não bate com o gateway ativo.
 
 ### Fixed
 
-- `paymentCheckout.ts`: removido o bloqueio que ignorava `VITE_PAYMENT_GATEWAY` e forçava sempre Cakto; o checkout externo volta a seguir `hotmart` ou `cakto` conforme a env.
+- Checkout externo: padrão do gateway passou a ser **Hotmart** quando `VITE_PAYMENT_GATEWAY` não está definida no build (evita ir para Cakto no Vercel sem env); `VITE_PAYMENT_GATEWAY=cakto` força Cakto; normalização da env (trim + aspas).
 
 - Meta Pixel (`MetaPixelProvider`): fallback por `VITE_META_PIXEL_ID` / `VITE_META_PIXEL_IDS` quando Supabase falha ou não devolve pixels; merge DB + env; espera runtime do `fbq` antes de `init`/`PageView` (Pixel Helper / rede); README e DEPLOY.md documentam as envs.
 
-- Fluxo de pagamento externo unificado: não depende mais só de env para Cakto (há fallback no código); Hotmart volta a ser opção real quando `VITE_PAYMENT_GATEWAY=hotmart` (`checkoutLinks`, `Checkout/index.tsx`, `CheckoutRedirectWrapper`, `RegionalPricingSection`, `AdminWhatsappFunnel`, `gtmTracking`, `validate-env`, `vite-env.d.ts`).
+- Fluxo de pagamento externo unificado (`checkoutLinks`, `Checkout/index.tsx`, `CheckoutRedirectWrapper`, etc.): gateway segue `paymentCheckout`; Hotmart é o default sem env.
 - Tags explícitas de favicon em `index.html` e ícone em `public/favicon.svg`, substituindo o ícone padrão da plataforma anterior.

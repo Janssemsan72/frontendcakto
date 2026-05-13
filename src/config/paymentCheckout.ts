@@ -1,6 +1,8 @@
 /**
- * Checkout externo: Cakto ou Hotmart conforme `VITE_PAYMENT_GATEWAY` no deploy.
- * Mesmo banco Supabase; provider/payment_provider refletem o gateway ativo.
+ * Checkout externo: Hotmart ou Cakto conforme `VITE_PAYMENT_GATEWAY`.
+ *
+ * Padrão **hotmart** se a env estiver ausente (evita produção ir para Cakto quando o Vercel
+ * não tem a variável). Para Cakto explícito: `VITE_PAYMENT_GATEWAY=cakto`.
  */
 
 export type PaymentGateway = 'cakto' | 'hotmart';
@@ -13,10 +15,16 @@ export const CAKTO_CHECKOUT_DEFAULT = 'https://pay.cakto.com.br/d877u4t_665160';
 /** Oferta Hotmart histórica do repo (fallback se VITE_HOTMART_PAYMENT_URL vazio). */
 export const HOTMART_CHECKOUT_DEFAULT = 'https://pay.hotmart.com/O103476976K';
 
+function normalizeGatewayEnv(): string {
+  let v = (import.meta.env.VITE_PAYMENT_GATEWAY as string | undefined) ?? '';
+  v = v.trim().replace(/^['"]+|['"]+$/g, '');
+  return v.toLowerCase();
+}
+
 export function getPaymentGateway(): PaymentGateway {
-  const raw = (import.meta.env.VITE_PAYMENT_GATEWAY as string | undefined)?.trim().toLowerCase();
-  if (raw === 'hotmart') return 'hotmart';
-  return 'cakto';
+  const raw = normalizeGatewayEnv();
+  if (raw === 'cakto') return 'cakto';
+  return 'hotmart';
 }
 
 export function getCaktoPaymentBaseUrl(): string {

@@ -1,3 +1,5 @@
+import { getPaymentGateway } from '@/config/paymentCheckout';
+
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
@@ -267,7 +269,7 @@ export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
-    payment_provider: payment_provider ?? 'cakto',
+    payment_provider: payment_provider ?? getPaymentGateway(),
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
     value: value ?? 0,
     currency: currency || 'BRL',
