@@ -14,5 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `paymentCheckout.ts`: removido o bloqueio que ignorava `VITE_PAYMENT_GATEWAY` e forçava sempre Cakto; o checkout externo volta a seguir `hotmart` ou `cakto` conforme a env.
+
+- Meta Pixel (`MetaPixelProvider`): fallback por `VITE_META_PIXEL_ID` / `VITE_META_PIXEL_IDS` quando Supabase falha ou não devolve pixels; merge DB + env; espera runtime do `fbq` antes de `init`/`PageView` (Pixel Helper / rede); README e DEPLOY.md documentam as envs.
+
 - Fluxo de pagamento externo unificado: não depende mais só de env para Cakto (há fallback no código); Hotmart volta a ser opção real quando `VITE_PAYMENT_GATEWAY=hotmart` (`checkoutLinks`, `Checkout/index.tsx`, `CheckoutRedirectWrapper`, `RegionalPricingSection`, `AdminWhatsappFunnel`, `gtmTracking`, `validate-env`, `vite-env.d.ts`).
 - Tags explícitas de favicon em `index.html` e ícone em `public/favicon.svg`, substituindo o ícone padrão da plataforma anterior.

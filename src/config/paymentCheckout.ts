@@ -1,6 +1,6 @@
 /**
- * Checkout externo: Cakto (padrão) ou Hotmart (VITE_PAYMENT_GATEWAY=hotmart).
- * Mesmo banco Supabase; provider/payment_provider refletem o gateway ativo no deploy.
+ * Checkout externo: Cakto ou Hotmart conforme `VITE_PAYMENT_GATEWAY` no deploy.
+ * Mesmo banco Supabase; provider/payment_provider refletem o gateway ativo.
  */
 
 export type PaymentGateway = 'cakto' | 'hotmart';
@@ -15,7 +15,8 @@ export const HOTMART_CHECKOUT_DEFAULT = 'https://pay.hotmart.com/O103476976K';
 
 export function getPaymentGateway(): PaymentGateway {
   const raw = (import.meta.env.VITE_PAYMENT_GATEWAY as string | undefined)?.trim().toLowerCase();
-  return raw === 'hotmart' ? 'hotmart' : 'cakto';
+  if (raw === 'hotmart') return 'hotmart';
+  return 'cakto';
 }
 
 export function getCaktoPaymentBaseUrl(): string {
@@ -29,7 +30,9 @@ export function getHotmartPaymentBaseUrl(): string {
 }
 
 export function getPaymentCheckoutBaseUrl(): string {
-  return getPaymentGateway() === 'hotmart' ? getHotmartPaymentBaseUrl() : getCaktoPaymentBaseUrl();
+  return getPaymentGateway() === 'hotmart'
+    ? getHotmartPaymentBaseUrl()
+    : getCaktoPaymentBaseUrl();
 }
 
 export function getCaktoCheckoutConfig(): {
