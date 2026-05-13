@@ -277,6 +277,44 @@ export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
 }
 
 // ---------------------------------------------------------------------------
+// purchase (GTM / GA4 — deduplicado por pedido na sessão)
+// ---------------------------------------------------------------------------
+
+export interface TrackPurchaseOnceParams {
+  id: string;
+  status: string;
+  amount_cents: number;
+  currency?: string;
+}
+
+/** Envia `purchase` ao dataLayer uma vez por `order.id` nesta sessão (evita duplicar em refresh). */
+export function trackPurchaseOnce(order: TrackPurchaseOnceParams): void {
+  if (!order || order.status !== 'paid') return;
+
+  const flagKey = `ml_gtm_purchase_fired_${order.id}`;
+  try {
+    if (sessionStorage.getItem(flagKey) === '1') return;
+    sessionStorage.setItem(flagKey, '1');
+  } catch {
+    /* private browsing */
+  }
+
+  const value = (order.amount_cents || 0) / 100;
+  const currency = (order.currency || 'BRL').toUpperCase();
+
+  pushToDataLayer('purchase', {
+    order_id: order.id,
+    payment_provider: getPaymentGateway(),
+    ecommerce: {
+      transaction_id: order.id,
+      value,
+      currency,
+      items: [{ item_name: 'Música Personalizada', price: value, quantity: 1 }],
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // GA4 Client ID (for server-side purchase tracking via Measurement Protocol)
 // ---------------------------------------------------------------------------
 
