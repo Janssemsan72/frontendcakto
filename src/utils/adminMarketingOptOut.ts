@@ -1,8 +1,6 @@
 /**
  * Marketing de terceiros (GTM/Stape → Google Ads, etc.) não deve correr nas rotas admin.
  * A aprovação automática de letras usa só `supabase.functions.invoke` — não depende disto.
- *
- * Host Stape (loader `63grxzipls.js`): `musiclovely.online` (em hotmart 2026 era `api.musiclovely.com.br`).
  */
 
 export function isAdminMarketingExcludedPath(pathname: string): boolean {
@@ -13,7 +11,7 @@ export function isAdminMarketingExcludedPath(pathname: string): boolean {
 /** Remove o loader GTM first-party (Stape) e limpa `dataLayer` após navegação SPA para admin. */
 export function stripMarketingTagsOnAdmin(): void {
   if (typeof document === "undefined") return;
-  document.querySelectorAll('script[src*="musiclovely.online"]').forEach((n) => {
+  document.querySelectorAll('script[src*="api.musiclovely.com.br"]').forEach((n) => {
     n.parentNode?.removeChild(n);
   });
   try {

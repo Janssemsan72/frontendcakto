@@ -11,7 +11,7 @@ Usuário no site (musiclovely.com)
     │   GTM Web Container (GTM-TKPCMTNB)
     │       │
     │       ▼
-    │   Stape Server-Side GTM (api.musiclovely.com)
+    │   Stape Server-Side GTM (api.musiclovely.com.br)
     │       │
     │       ▼
     │   Google Analytics 4 (G-G5XJJJBWZP)
@@ -36,7 +36,7 @@ O Stape hospeda um **GTM Server Container** que funciona como proxy entre o nave
 - Controle dos dados enviados
 
 ### 1.2 Configuração do Subdomínio
-O subdomínio `api.musiclovely.com` foi configurado para apontar para o Stape. Isso transforma requisições de terceiros em requisições first-party.
+O subdomínio `api.musiclovely.com.br` foi configurado para apontar para o Stape. Isso transforma requisições de terceiros em requisições first-party.
 
 ### 1.3 Custom Loader Script
 O Stape gera um script personalizado que substitui o script padrão do GTM. Ele é inserido no `index.html` do projeto.
@@ -48,7 +48,7 @@ O Stape gera um script personalizado que substitui o script padrão do GTM. Ele 
 <!-- Google Tag Manager (Stape server-side) -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com/63grxzipls.js?'+i;
+j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com.br/63grxzipls.js?'+i;
 f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
 'SEU_PARAMETRO_I_AQUI');</script>
 <!-- End Google Tag Manager -->
@@ -57,7 +57,7 @@ f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
 **Logo após abrir o `<body>`:**
 ```html
 <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://api.musiclovely.com/ns.html?id=GTM-TKPCMTNB"
+<noscript><iframe src="https://api.musiclovely.com.br/ns.html?id=GTM-TKPCMTNB"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 ```
@@ -74,7 +74,7 @@ f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
 O `vercel.json` precisa permitir os domínios do GTM/Stape. Os seguintes domínios devem estar em `script-src`, `script-src-elem`, `connect-src` e `frame-src`:
 
 ```
-https://api.musiclovely.com
+https://api.musiclovely.com.br
 https://*.googletagmanager.com
 https://*.google-analytics.com
 ```

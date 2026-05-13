@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- GTM/Stape: alinhado ao fluxo **`musiclovely-cakto - hotmart 2026`** (mesmo container/site): `gtmTracking.ts` como na ref com `payment_provider: 'hotmart'` fixo; `stripMarketingTagsOnAdmin` em `App.tsx`; sem `GtmRouteTracker`; `CheckoutRedirectWrapper` sem `redirect_to_payment` (como na ref); `adminMarketingOptOut` remove scripts `musiclovely.online`; `index.html` com mesmos comentários/preconnect da ref (**host** `https://musiclovely.online` em vez de `api.musiclovely.com.br`); CSP `vercel.json` e CORS `security.ts` para o novo host; MP backend em `serverTracking.ts`.
+- GTM/Stape: **mesmo snippet que `musiclovely-cakto - hotmart 2026`** — loader `63grxzipls.js` + `ns.html` + `preconnect` em **`https://api.musiclovely.com.br`** (container `GTM-TKPCMTNB`, parâmetro `9b=…` igual à ref); CSP `vercel.json` alinhada à ref; `adminMarketingOptOut` remove scripts `api.musiclovely.com.br`; GA4 MP no backend (`serverTracking.ts`) em **`https://api.musiclovely.com.br/mp/collect`**. O site pode estar em `musiclovely.online`; o first-party Stape continua no host configurado no Stape (ref). `docs/GTM-STAPE-GA4-CONFIGURACAO.md`: URLs do exemplo corrigidas para `api.musiclovely.com.br`.
 
 - Admin (`AdminWhatsappFunnel.tsx`): deteção de “checkout interno” da Musiclovely inclui URLs com **`musiclovely.online`** (além de `musiclovely.com`), para alinhar ao domínio de tracking/site.
 
