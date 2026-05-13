@@ -8,10 +8,14 @@ export function isAdminMarketingExcludedPath(pathname: string): boolean {
   return pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/app/admin");
 }
 
-/** Remove o loader GTM first-party (Stape) e limpa `dataLayer` após navegação SPA para admin. */
+/** Remove o script GTM (googletagmanager.com ou loader Stape antigo) e limpa `dataLayer` após navegação SPA para admin. */
 export function stripMarketingTagsOnAdmin(): void {
   if (typeof document === "undefined") return;
-  document.querySelectorAll('script[src*="api.musiclovely.com.br"]').forEach((n) => {
+  document
+    .querySelectorAll(
+      'script[src*="googletagmanager.com/gtm.js"], script[src*="api.musiclovely.com.br"]',
+    )
+    .forEach((n) => {
     n.parentNode?.removeChild(n);
   });
   try {

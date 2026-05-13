@@ -9,10 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Pasta `backend-update/` com rascunho (`README.md`, `src/autoJobsWorker.ts`, `src/index.new.ts`).
+- `VITE_META_PIXEL_SOURCE=gtm`: o app **não** faz `fbq('init')` / PageView no browser; os pixels Meta vêm só das tags no **Google Tag Manager** (útil para 3+ pixels sem duplicar com Supabase/env).
 
 ### Changed
 
-- GTM/Stape: **mesmo snippet que `musiclovely-cakto - hotmart 2026`** — loader `63grxzipls.js` + `ns.html` + `preconnect` em **`https://api.musiclovely.com.br`** (container `GTM-TKPCMTNB`, parâmetro `9b=…` igual à ref); CSP `vercel.json` alinhada à ref; `adminMarketingOptOut` remove scripts `api.musiclovely.com.br`; GA4 MP no backend (`serverTracking.ts`) em **`https://api.musiclovely.com.br/mp/collect`**. O site pode estar em `musiclovely.online`; o first-party Stape continua no host configurado no Stape (ref). `docs/GTM-STAPE-GA4-CONFIGURACAO.md`: URLs do exemplo corrigidas para `api.musiclovely.com.br`.
+- GTM: **snippet oficial** do Google (`https://www.googletagmanager.com/gtm.js?id=GTM-TKPCMTNB` + `ns.html` no mesmo domínio), como no modal “Instalar o Gerenciador de tags”; guarda de `/admin` no `<head>`; `preconnect`/`dns-prefetch` para `googletagmanager.com`. Substitui o loader Stape (`api.musiclovely.com.br/63grxzipls.js`). `adminMarketingOptOut` remove `gtm.js` e loaders Stape antigos. CSP `vercel.json` já inclui `*.googletagmanager.com`; GA4 MP no backend pode continuar em Stape (`api.musiclovely.com.br/mp/collect`) se configurado.
 
 - Admin (`AdminWhatsappFunnel.tsx`): deteção de “checkout interno” da Musiclovely inclui URLs com **`musiclovely.online`** (além de `musiclovely.com`), para alinhar ao domínio de tracking/site.
 
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Checkout externo: padrão do gateway passou a ser **Hotmart** quando `VITE_PAYMENT_GATEWAY` não está definida no build (evita ir para Cakto no Vercel sem env); `VITE_PAYMENT_GATEWAY=cakto` força Cakto; normalização da env (trim + aspas).
 
-- Meta Pixel (`MetaPixelProvider`): fallback por `VITE_META_PIXEL_ID` / `VITE_META_PIXEL_IDS` quando Supabase falha ou não devolve pixels; merge DB + env; espera runtime do `fbq` antes de `init`/`PageView` (Pixel Helper / rede); README e DEPLOY.md documentam as envs.
+- Meta Pixel (`MetaPixelProvider`): fallback por `VITE_META_PIXEL_ID` / `VITE_META_PIXEL_IDS` quando Supabase falha ou não devolve pixels; merge DB + env; espera runtime do `fbq` antes de `init`/`PageView` (Pixel Helper / rede); opção `VITE_META_PIXEL_SOURCE=gtm` para delegar init ao GTM; README e DEPLOY.md documentam as envs.
 
 - Fluxo de pagamento externo unificado (`checkoutLinks`, `Checkout/index.tsx`, `CheckoutRedirectWrapper`, etc.): gateway segue `paymentCheckout`; Hotmart é o default sem env.
 - Tags explícitas de favicon em `index.html` e ícone em `public/favicon.svg`, substituindo o ícone padrão da plataforma anterior.

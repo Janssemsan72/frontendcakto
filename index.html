@@ -3,15 +3,14 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Google Tag Manager (Stape server-side) -->
-    <!-- ✅ CORREÇÃO: Carregamento síncrono para garantir captura de todos os eventos do funil -->
-    <!-- O script GTM já tem j.async=true internamente, não bloqueia o render -->
+    <!-- Google Tag Manager (snippet oficial — tagmanager.google.com) -->
+    <!-- Não injectar em /admin* no primeiro paint (SPA: ver também stripMarketingTagsOnAdmin) -->
     <script>(function(w,d,s,l,i){try{var p=(w.location&&w.location.pathname)||'';if(p==='/admin'||p.indexOf('/admin/')===0||p.indexOf('/app/admin')===0)return;}catch(e){}
     w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com.br/63grxzipls.js?'+i;
-    f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
-    '9b=GghNLi41XzM4PDMkLjYwQQVRQkdLXhYJTgEFGhMbHggFCRwQVBsdCg%3D%3D');</script>
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TKPCMTNB');</script>
     <!-- End Google Tag Manager -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -144,11 +143,12 @@
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
     
-    <!-- Preconnect para GTM Stape e Facebook (críticos para tracking) -->
-    <link rel="preconnect" href="https://api.musiclovely.com.br" crossorigin />
+    <!-- Preconnect: GTM (googletagmanager.com) + Facebook -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
     <!-- ✅ OTIMIZAÇÃO: DNS prefetch para domínios de terceiros (menos críticos) -->
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
@@ -234,14 +234,14 @@
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://api.musiclovely.com.br/ns.html?id=GTM-TKPCMTNB"
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TKPCMTNB"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
     <div id="root"></div>
     <!-- ✅ OTIMIZAÇÃO: Script principal será injetado pelo Vite durante o build -->
     
-    <!-- ✅ CORREÇÃO META PIXEL: Noscript fallback (deve estar no body, não no head) -->
+    <!-- ✅ META noscript: se todos os pixels estiverem no GTM, remove este bloco para não duplicar PageView num ID. -->
     <noscript>
       <img height="1" width="1" style="display:none"
       src="https://www.facebook.com/tr?id=68f98a3f196fbe7f0e5683c7&ev=PageView&noscript=1"/>

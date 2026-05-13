@@ -95,7 +95,8 @@ Se o repositório estiver conectado ao Vercel:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_API_URL` (opcional)
-   - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel no browser)
+   - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel quando **não** usas `VITE_META_PIXEL_SOURCE=gtm`)
+   - `VITE_META_PIXEL_SOURCE=gtm` (opcional; init/PageView só pelo GTM — vários pixels = várias tags Meta no GTM)
    - `VITE_PAYMENT_GATEWAY` — omitir = Hotmart; `cakto` para Cakto
    - `VITE_HOTMART_PAYMENT_URL` / `VITE_CAKTO_PAYMENT_URL` (opcional; checkout externo)
    - `VITE_GTM_DISABLE` / `VITE_GTM_ENABLE_ON_LOCALHOST` (opcional; GTM)

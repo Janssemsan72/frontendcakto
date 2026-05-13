@@ -4,6 +4,9 @@
  * Loads Meta Pixel IDs from Supabase (`meta_pixels`) and from env fallback,
  * injects fbevents.js, initializes ALL pixels, and fires PageView for each.
  *
+ * Se `VITE_META_PIXEL_SOURCE=gtm`, **não** faz init no browser: os pixels vêm só
+ * das tags Meta no Google Tag Manager (evita 2 no app + 1 só no GTM, etc.).
+ *
  * Env fallback (VITE_META_PIXEL_ID ou VITE_META_PIXEL_IDS) garante que o
  * browser pixel dispare mesmo se a tabela estiver vazia, RLS bloquear anon, ou
  * a query falhar — necessário para o Meta Pixel Helper ver eventos.
@@ -21,6 +24,12 @@ function getEnvPixelIds(): string[] {
     .filter(Boolean);
   const combined = [single, ...fromList].filter(Boolean) as string[];
   return [...new Set(combined)];
+}
+
+/** Pixels Meta só pelo GTM (tags no container); o app não faz `fbq('init')` para evitar duplicar / contar só parte. */
+function isMetaPixelManagedByGtm(): boolean {
+  const v = (import.meta.env.VITE_META_PIXEL_SOURCE || '').trim().toLowerCase();
+  return v === 'gtm' || v === '1' || v === 'true' || v === 'yes';
 }
 
 function installFbqStub(): void {
@@ -88,43 +97,55 @@ export default function MetaPixelProvider({ children }: { children: React.ReactN
     initialized.current = true;
 
     (async () => {
-      const envIds = getEnvPixelIds();
-      let dbIds: string[] = [];
-
-      try {
-        const { data, error } = await supabase
-          .from('meta_pixels')
-          .select('pixel_id')
-          .eq('is_active', true);
-
-        if (error) {
-          console.warn('[MetaPixel] Supabase error:', error.message);
-        } else {
-          dbIds = [
-            ...new Set(
-              (data ?? [])
-                .map((row: { pixel_id: string }) => row.pixel_id?.trim())
-                .filter(Boolean) as string[],
-            ),
-          ];
-        }
-      } catch (err) {
-        console.warn('[MetaPixel] Supabase fetch failed:', err);
-      }
-
-      const pixel_ids = [...new Set([...dbIds, ...envIds])];
-
-      if (pixel_ids.length === 0) {
-        console.warn(
-          '[MetaPixel] Nenhum pixel ativo: cadastre em meta_pixels (Supabase) ou defina VITE_META_PIXEL_ID / VITE_META_PIXEL_IDS.',
-        );
-        return;
-      }
-
-      console.log('[MetaPixel] Pixel IDs (DB + env):', pixel_ids);
-
       try {
         await ensureFbeventsLoaded();
+
+        if (isMetaPixelManagedByGtm()) {
+          if (import.meta.env.DEV) {
+            console.info(
+              '[MetaPixel] VITE_META_PIXEL_SOURCE=gtm: init/PageView ficam a cargo do GTM (3+ pixels = tags Meta no container tagmanager.google.com).',
+            );
+          }
+          fireServerPageView();
+          return;
+        }
+
+        const envIds = getEnvPixelIds();
+        let dbIds: string[] = [];
+
+        try {
+          const { data, error } = await supabase
+            .from('meta_pixels')
+            .select('pixel_id')
+            .eq('is_active', true);
+
+          if (error) {
+            console.warn('[MetaPixel] Supabase error:', error.message);
+          } else {
+            dbIds = [
+              ...new Set(
+                (data ?? [])
+                  .map((row: { pixel_id: string }) => row.pixel_id?.trim())
+                  .filter(Boolean) as string[],
+              ),
+            ];
+          }
+        } catch (err) {
+          console.warn('[MetaPixel] Supabase fetch failed:', err);
+        }
+
+        const pixel_ids = [...new Set([...dbIds, ...envIds])];
+
+        if (pixel_ids.length === 0) {
+          console.warn(
+            '[MetaPixel] Nenhum pixel ativo: cadastre em meta_pixels (Supabase) ou defina VITE_META_PIXEL_ID / VITE_META_PIXEL_IDS (ou use VITE_META_PIXEL_SOURCE=gtm e configure os pixels só no GTM).',
+          );
+          fireServerPageView();
+          return;
+        }
+
+        console.log('[MetaPixel] Pixel IDs (DB + env):', pixel_ids);
+
         const fbq = (window as any).fbq;
 
         for (const id of pixel_ids) {

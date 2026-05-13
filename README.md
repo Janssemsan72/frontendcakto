@@ -39,6 +39,8 @@ VITE_API_URL=https://web-production-83be.up.railway.app
 # Opcional: garante o pixel no browser mesmo se a tabela meta_pixels estiver vazia ou RLS bloquear
 # VITE_META_PIXEL_ID=123456789012345
 # VITE_META_PIXEL_IDS=111111111111111,222222222222222
+# Meta Pixel só pelo GTM (tags no container) — o app não chama fbq('init'); use 3+ tags Meta no GTM
+# VITE_META_PIXEL_SOURCE=gtm
 
 # Checkout externo: padrão **Hotmart** (sem env). Para Cakto: VITE_PAYMENT_GATEWAY=cakto
 # VITE_PAYMENT_GATEWAY=cakto
@@ -119,7 +121,8 @@ O projeto está configurado para deploy no Vercel. O arquivo `vercel.json` cont�
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_API_URL` (opcional)
-   - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel)
+   - `VITE_META_PIXEL_ID` ou `VITE_META_PIXEL_IDS` (opcional; fallback do Meta Pixel quando **não** usas `VITE_META_PIXEL_SOURCE=gtm`)
+   - `VITE_META_PIXEL_SOURCE=gtm` (opcional; pixels **só** pelo GTM — evita competir com 2 no app + 1 no GTM)
    - `VITE_PAYMENT_GATEWAY` — omitir = **Hotmart**; `cakto` para checkout Cakto
    - `VITE_HOTMART_PAYMENT_URL` / `VITE_CAKTO_PAYMENT_URL` (opcional; URLs de checkout)
    - `VITE_GTM_DISABLE` / `VITE_GTM_ENABLE_ON_LOCALHOST` (opcional; controlo do dataLayer)

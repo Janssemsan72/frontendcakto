@@ -38,31 +38,43 @@ O Stape hospeda um **GTM Server Container** que funciona como proxy entre o nave
 ### 1.2 Configuração do Subdomínio
 O subdomínio `api.musiclovely.com.br` foi configurado para apontar para o Stape. Isso transforma requisições de terceiros em requisições first-party.
 
-### 1.3 Custom Loader Script
-O Stape gera um script personalizado que substitui o script padrão do GTM. Ele é inserido no `index.html` do projeto.
+### 1.3 Snippet GTM Web em produção (`index.html`)
 
-**Localização no código:** `index.html` (raiz do projeto)
+O repositório usa o **snippet oficial** do Google (mesmo do modal *Instalar o Gerenciador de tags* em [tagmanager.google.com](https://tagmanager.google.com)), com `dl=l!='dataLayer'?…` e `gtm.js?id=GTM-TKPCMTNB`. Opcionalmente é acrescentada uma guarda para **não** injectar em `/admin*` no primeiro paint.
 
 **No `<head>` (o mais alto possível):**
 ```html
-<!-- Google Tag Manager (Stape server-side) -->
+<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com.br/63grxzipls.js?'+i;
-f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
-'SEU_PARAMETRO_I_AQUI');</script>
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TKPCMTNB');</script>
 <!-- End Google Tag Manager -->
 ```
 
 **Logo após abrir o `<body>`:**
 ```html
 <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://api.musiclovely.com.br/ns.html?id=GTM-TKPCMTNB"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TKPCMTNB"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 ```
 
-### 1.4 Como Obter/Atualizar o Script
+### 1.4 Alternativa: Custom Loader Stape (first-party)
+
+Se preferires o script servido pelo teu subdomínio Stape em vez de `googletagmanager.com`, gera o loader em [app.stape.io](https://app.stape.io) e substitui apenas o bloco do `<head>` (mantém o mesmo `GTM-TKPCMTNB` no container, mas o URL do `j.src` passa a ser o custom loader).
+
+**Exemplo (Stape — não é o default actual do repo):**
+```html
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.com.br/63grxzipls.js?'+i;
+f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
+'SEU_PARAMETRO_I_AQUI');</script>
+```
+
+### 1.5 Como Obter/Atualizar o Script (Stape)
 1. Acesse [app.stape.io](https://app.stape.io)
 2. Vá no seu Server Container
 3. Clique em **Custom Loader**
@@ -70,7 +82,7 @@ f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
 5. Substitua no `index.html`
 6. **IMPORTANTE**: Clique "Save changes" no Stape após qualquer alteração
 
-### 1.5 Content Security Policy (CSP)
+### 1.6 Content Security Policy (CSP)
 O `vercel.json` precisa permitir os domínios do GTM/Stape. Os seguintes domínios devem estar em `script-src`, `script-src-elem`, `connect-src` e `frame-src`:
 
 ```
