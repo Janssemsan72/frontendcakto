@@ -1,5 +1,3 @@
-import { getPaymentGateway } from '@/config/paymentCheckout';
-
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
@@ -8,7 +6,6 @@ declare global {
 
 const USER_DATA_KEY = 'ml_user_data';
 
-/** Base: `musiclovely-cakto - hotmart 2026` (sem env opcionais). */
 function isTrackingEnabled(): boolean {
   const path = window.location.pathname || '';
   if (path.startsWith('/admin') || path.startsWith('/app/admin')) return false;
@@ -268,7 +265,7 @@ export function trackRedirectToPayment(params: RedirectToPaymentParams): void {
 
   pushToDataLayer('redirect_to_payment', {
     order_id: orderId,
-    payment_provider: getPaymentGateway(),
+    payment_provider: 'hotmart',
     checkout_url: checkoutUrl ? stripPiiFromUrl(checkoutUrl) : '',
     value: value ?? 0,
     currency: currency || 'BRL',
@@ -304,7 +301,7 @@ export function trackPurchaseOnce(order: TrackPurchaseOnceParams): void {
 
   pushToDataLayer('purchase', {
     order_id: order.id,
-    payment_provider: getPaymentGateway(),
+    payment_provider: 'hotmart',
     ecommerce: {
       transaction_id: order.id,
       value,

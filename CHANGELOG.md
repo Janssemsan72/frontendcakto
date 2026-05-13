@@ -12,10 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- GTM/Stape: host de tracking atualizado para **`https://musiclovely.online`** (`63grxzipls.js`, `ns.html`, preconnect, CSP em `vercel.json`, `adminMarketingOptOut`); CORS em `security.ts`; referência MP em `backendmusiclovelyhotmart/src/utils/serverTracking.ts`.
-- Admin (`AdminWhatsappFunnel.tsx`): deteção de “checkout interno” da Musiclovely inclui URLs com **`musiclovely.online`** (além de `musiclovely.com`), para alinhar ao domínio de tracking/site.
+- GTM/Stape: alinhado ao fluxo **`musiclovely-cakto - hotmart 2026`** (mesmo container/site): `gtmTracking.ts` como na ref com `payment_provider: 'hotmart'` fixo; `stripMarketingTagsOnAdmin` em `App.tsx`; sem `GtmRouteTracker`; `CheckoutRedirectWrapper` sem `redirect_to_payment` (como na ref); `adminMarketingOptOut` remove scripts `musiclovely.online`; `index.html` com mesmos comentários/preconnect da ref (**host** `https://musiclovely.online` em vez de `api.musiclovely.com.br`); CSP `vercel.json` e CORS `security.ts` para o novo host; MP backend em `serverTracking.ts`.
 
-- GTM (Stape): snippet restaurado em `index.html` (dataLayer + `63grxzipls.js` + noscript); `GtmRouteTracker` em `App.tsx` para `page_view` em rotas SPA; CSP em `vercel.json` para `api.musiclovely.com` e domínios Google Tag Manager; `gtmTracking` com `VITE_GTM_DISABLE` / `VITE_GTM_ENABLE_ON_LOCALHOST`, `trackPurchaseOnce` em `PaymentSuccess`; `redirect_to_payment` em redirecionamentos WhatsApp e `redirectToCakto`; `begin_checkout` com ID de sessão/pedido.
+- Admin (`AdminWhatsappFunnel.tsx`): deteção de “checkout interno” da Musiclovely inclui URLs com **`musiclovely.online`** (além de `musiclovely.com`), para alinhar ao domínio de tracking/site.
 
 - Hero (`HeroSection.tsx`): poster e fallback estáticos com frame ~50% do clip (`public/video/musiclovaly-poster.webp`); reprodução começa após seek para o meio (sem `autoPlay` desde t=0) para alinhar com o poster e reduzir efeito de entrada; retoma após `online` + `load()`; `preload="auto"` e `loop` mantidos.
 - `public/favicon.svg`: ícone com coração + nota musical em preto sobre fundo lilás-claro arredondado (marca antiga do site), em vez do ícone só com nota em fundo marrom.

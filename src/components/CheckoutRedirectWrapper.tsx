@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getPaymentCheckoutBaseUrl, getPaymentGateway, isExternalPaymentUrl } from '@/config/paymentCheckout';
-import { trackRedirectToPayment } from '@/utils/gtmTracking';
+import { getPaymentCheckoutBaseUrl, isExternalPaymentUrl } from '@/config/paymentCheckout';
 
 /**
  * Wrapper component que intercepta URLs do WhatsApp ANTES do Checkout ser renderizado
@@ -91,18 +90,6 @@ export default function CheckoutRedirectWrapper({ children }: { children: React.
             // A URL da Cakto deve conter APENAS os parâmetros necessários para pagamento
             
             const caktoUrl = `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
-
-            try {
-              trackRedirectToPayment({
-                orderId: orderData.id,
-                checkoutUrl: caktoUrl,
-                value: (orderData.amount_cents ?? 4790) / 100,
-                currency: 'BRL',
-                payment_provider: getPaymentGateway(),
-              });
-            } catch {
-              /* não bloquear redirect */
-            }
             
             // ✅ Registrar clique no botão "Finalizar Agora" (tracking)
             supabase.functions

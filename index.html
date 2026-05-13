@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Google Tag Manager (Stape server-side) — base: hotmart 2026 -->
-    <!-- ✅ Não injectar GTM em /admin* (pathname no primeiro paint) -->
-    <!-- O script GTM já tem j.async=true internamente -->
+    <!-- Google Tag Manager (Stape server-side) -->
+    <!-- ✅ CORREÇÃO: Carregamento síncrono para garantir captura de todos os eventos do funil -->
+    <!-- O script GTM já tem j.async=true internamente, não bloqueia o render -->
     <script>(function(w,d,s,l,i){try{var p=(w.location&&w.location.pathname)||'';if(p==='/admin'||p.indexOf('/admin/')===0||p.indexOf('/app/admin')===0)return;}catch(e){}
     w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -143,17 +143,14 @@
     <!-- ✅ OTIMIZAÇÃO: Preconnect para recursos críticos PRIMEIRO (mais importante) -->
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
-    <link rel="preconnect" href="https://pay.hotmart.com" crossorigin />
+    
     <!-- Preconnect para GTM Stape e Facebook (críticos para tracking) -->
     <link rel="preconnect" href="https://musiclovely.online" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
     <!-- ✅ OTIMIZAÇÃO: DNS prefetch para domínios de terceiros (menos críticos) -->
     <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
-    <link rel="dns-prefetch" href="https://musiclovely.online" />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
-    <link rel="dns-prefetch" href="https://pay.hotmart.com" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
 
     
@@ -238,7 +235,7 @@
   <body>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://musiclovely.online/ns.html?id=GTM-TKPCMTNB"
-    height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
     <div id="root"></div>

@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { PublicErrorBoundary } from "@/components/PublicErrorBoundary";
 import PublicRoutes from "@/components/PublicRoutes";
 import RouterSync from "@/components/RouterSync";
-import { GtmRouteTracker } from "@/components/GtmRouteTracker";
+import { stripMarketingTagsOnAdmin } from "@/utils/adminMarketingOptOut";
 // ✅ OTIMIZAÇÃO: i18n carregado de forma diferida no main.tsx para não bloquear FCP
 // import '@/i18n'; // Removido - carregado diferidamente
 import { lazyWithRetry } from "@/utils/lazyWithRetry";
@@ -88,6 +88,11 @@ const AppContent = () => {
       navigate('/admin', { replace: true });
     }
   }, [isAdminRoute, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!isAdminRoute) return;
+    stripMarketingTagsOnAdmin();
+  }, [isAdminRoute]);
 
   // Processar fila quiz_retry_queue uma vez por sessão (quem abre o site ajuda a não perder quizzes)
   useEffect(() => {
@@ -287,7 +292,6 @@ const AppContent = () => {
         </>
       )}
       <RouterSync>
-        <GtmRouteTracker />
         <PublicErrorBoundary>
           <Suspense fallback={null}>
             <Routes>
