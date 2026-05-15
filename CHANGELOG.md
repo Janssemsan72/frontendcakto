@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - GTM: **snippet oficial** do Google (`https://www.googletagmanager.com/gtm.js?id=GTM-TKPCMTNB` + `ns.html` no mesmo domínio), como no modal “Instalar o Gerenciador de tags”; guarda de `/admin` no `<head>`; `preconnect`/`dns-prefetch` para `googletagmanager.com`. Substitui o loader Stape (`api.musiclovely.com.br/63grxzipls.js`). `adminMarketingOptOut` remove `gtm.js` e loaders Stape antigos. CSP `vercel.json` já inclui `*.googletagmanager.com`; GA4 MP no backend pode continuar em Stape (`api.musiclovely.com.br/mp/collect`) se configurado.
 
+- `useUtmParams.ts`: logs de tracking (`Parâmetros de tracking salvos`, navegação com UTMs) só em `import.meta.env.DEV`, para não poluir a consola em produção.
+
 - Admin (`AdminWhatsappFunnel.tsx`): deteção de “checkout interno” da Musiclovely inclui URLs com **`musiclovely.online`** (além de `musiclovely.com`), para alinhar ao domínio de tracking/site.
 
 - Hero (`HeroSection.tsx`): poster e fallback estáticos com frame ~50% do clip (`public/video/musiclovaly-poster.webp`); reprodução começa após seek para o meio (sem `autoPlay` desde t=0) para alinhar com o poster e reduzir efeito de entrada; retoma após `online` + `load()`; `preload="auto"` e `loop` mantidos.
@@ -22,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Checkout dual **Cakto / Hotmart** (mesmo banco): [`src/config/paymentCheckout.ts`](src/config/paymentCheckout.ts) com defaults de URL (`VITE_CAKTO_PAYMENT_URL` / `VITE_HOTMART_PAYMENT_URL` ou fallbacks em código); **gateway padrão Hotmart** se `VITE_PAYMENT_GATEWAY` ausente; `VITE_PAYMENT_GATEWAY=cakto` força Cakto; regeneração de `cakto_payment_url` quando o host salvo não bate com o gateway ativo.
 
 ### Fixed
+
+- Checkout → Hotmart/Cakto: redirecionamento mais robusto (`navigateToExternalPayment`: `window.top`, link `target="_top"`, `location.replace`) e recuperação após timeout se o browser/WebView não sair da rota `/checkout` (liberta o botão e mostra link manual). Mitiga clientes presos em Processando… em Instagram/Facebook ou Safari. Novas chaves em `src/i18n/locales/pt.json` para o aviso e o CTA.
+
+- CSP (`vercel.json`): incluir `https://api.musiclovely.online` junto de `api.musiclovely.com.br` em `script-src`, `script-src-elem`, `connect-src` e `frame-src`, para iframes/scripts do GTM/Stape no domínio `.online` não serem bloqueados no site `www.musiclovely.online`.
 
 - Build Vite: export de `trackPurchaseOnce` em `gtmTracking.ts` (usado por `PaymentSuccess.tsx`); evento `purchase` no dataLayer com deduplicação por pedido em `sessionStorage`.
 

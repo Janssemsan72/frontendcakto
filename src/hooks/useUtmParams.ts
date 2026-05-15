@@ -78,7 +78,9 @@ export function useUtmParams() {
     if (isAdminRoute) return;
     if (Object.keys(currentTrackingParams).length > 0) {
       localStorage.setItem('musiclovely_tracking_params', JSON.stringify(currentTrackingParams));
-      console.log('✅ Parâmetros de tracking salvos:', currentTrackingParams);
+      if (import.meta.env.DEV) {
+        console.log('✅ Parâmetros de tracking salvos:', currentTrackingParams);
+      }
     }
   }, [currentTrackingParams, isAdminRoute]);
 
@@ -157,7 +159,9 @@ export function useUtmParams() {
     // Preservar hash se existir no path original
     const hash = url.hash || '';
     const finalPath = url.pathname + (existingParams.toString() ? `?${existingParams.toString()}` : '') + hash;
-    console.log('🔄 Navegando com parâmetros de tracking:', { path, finalPath, trackingParams: allTrackingParams });
+    if (import.meta.env.DEV) {
+      console.log('🔄 Navegando com parâmetros de tracking:', { path, finalPath, trackingParams: allTrackingParams });
+    }
     navigate(finalPath, options);
   }, [navigate, allTrackingParams, isAdminRoute]);
 
