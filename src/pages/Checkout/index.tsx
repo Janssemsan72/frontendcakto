@@ -49,6 +49,7 @@ import {
   navigateToExternalPayment,
   scheduleExternalCheckoutRecovery,
 } from '@/utils/externalCheckoutRedirect';
+import { appendExternalCheckoutTracking } from '@/utils/hotmartTrackingParams';
 
 function saveGAClientIdForOrder(orderId: string) {
   const cid = getGAClientId();
@@ -254,13 +255,8 @@ export default function Checkout() {
     caktoParams.set('language', language);
     caktoParams.set('redirect_url', redirectUrl);
     
-    // Adicionar parâmetros UTM para rastreamento na Cakto
     const safeUtms = utms || {};
-    Object.entries(safeUtms).forEach(([key, value]) => {
-      if (value && ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'src', 'sck'].includes(key)) {
-        caktoParams.set(key, value as string);
-      }
-    });
+    appendExternalCheckoutTracking(caktoParams, safeUtms);
 
     return `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
   };

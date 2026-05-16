@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Hotmart/Cakto: `src` montado como `utm_source|utm_medium|…` quando ausente na URL (`hotmartTrackingParams.ts`), alinhado à versão hotmart 2026; aplicado em `checkoutLinks` e `Checkout/index.tsx`.
+
+- `index.html`: script de persistência UTM/`src`/`sck` (hotmart 2026) com cookies em `.musiclovely.online` e `.musiclovely.com.br`, skip em `/admin`, sync de `sck` com `musiclovely_tracking_params`.
+
 - Checkout → Hotmart/Cakto: redirecionamento mais robusto (`navigateToExternalPayment`: `window.top`, link `target="_top"`, `location.replace`) e recuperação após timeout se o browser/WebView não sair da rota `/checkout` (liberta o botão e mostra link manual). Mitiga clientes presos em Processando… em Instagram/Facebook ou Safari. Novas chaves em `src/i18n/locales/pt.json` para o aviso e o CTA.
 
 - CSP (`vercel.json`): incluir `https://api.musiclovely.online` junto de `api.musiclovely.com.br` em `script-src`, `script-src-elem`, `connect-src` e `frame-src`, para iframes/scripts do GTM/Stape no domínio `.online` não serem bloqueados no site `www.musiclovely.online`.

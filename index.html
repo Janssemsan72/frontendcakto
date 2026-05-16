@@ -274,5 +274,258 @@
         else window.addEventListener('react-ready', onReactReady, { once: true });
       })();
     </script>
+
+    <!-- UTM / src / sck no funil (hotmart 2026); domínio .online e .com.br; não corre em /admin -->
+    <script>
+    (function () {
+        try {
+            var p = (window.location && window.location.pathname) || '';
+            if (p === '/admin' || p.indexOf('/admin/') === 0 || p.indexOf('/app/admin') === 0) return;
+        } catch (e) { return; }
+
+        function getTrackingCookieDomain() {
+            var h = (location.hostname || '').toLowerCase();
+            if (h === 'localhost' || h === '127.0.0.1') return '';
+            if (h.indexOf('musiclovely.online') !== -1) return '.musiclovely.online';
+            if (h.indexOf('musiclovely.com.br') !== -1) return '.musiclovely.com.br';
+            if (h.indexOf('musiclovely.com') !== -1) return '.musiclovely.com';
+            return '';
+        }
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        function setCookie(cookieName, cookieValue, expirationTime) {
+            var cookiePath = "/";
+            expirationTime = expirationTime * 1000;
+            var date = new Date();
+            date.setTime(date.getTime() + expirationTime);
+            var expirationDate = date.toUTCString();
+            var domain = getTrackingCookieDomain();
+            var cookieStr = cookieName + "=" + encodeURIComponent(cookieValue) + "; expires=" + expirationDate + "; path=" + cookiePath + "; SameSite=Lax";
+            if (domain) cookieStr += "; domain=" + domain;
+            document.cookie = cookieStr;
+        }
+
+        function getCookieValue(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function getSckFromAppStorage() {
+            try {
+                var saved = localStorage.getItem('musiclovely_tracking_params');
+                if (saved) {
+                    var params = JSON.parse(saved);
+                    if (params && params.sck) return params.sck;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function persistSckToAppStorage(sck) {
+            try {
+                var saved = localStorage.getItem('musiclovely_tracking_params');
+                var params = saved ? JSON.parse(saved) : {};
+                params.sck = sck;
+                localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
+            } catch (e) {}
+        }
+
+        var cookieName = "index";
+        var sck = getCookieValue(cookieName) || getSckFromAppStorage() || localStorage.getItem(cookieName) || "";
+
+        var expirationTime = 34560000;
+        if (sck) {
+            setCookie(cookieName, sck, expirationTime);
+            localStorage.setItem(cookieName, sck);
+            sessionStorage.setItem(cookieName, sck);
+            persistSckToAppStorage(sck);
+        }
+
+        var dateCookieName = "entry_date";
+        var entryDate = getCookieValue(dateCookieName) || localStorage.getItem(dateCookieName);
+        if (!entryDate) {
+            entryDate = String(Date.now());
+            setCookie(dateCookieName, entryDate, 34560000);
+            localStorage.setItem(dateCookieName, entryDate);
+            sessionStorage.setItem(dateCookieName, entryDate);
+        }
+
+        var adParams = ['fbclid', 'gclid'];
+        var isAdClick = false;
+        for (var ai = 0; ai < adParams.length; ai++) {
+            if (getParameterByName(adParams[ai])) { isAdClick = true; break; }
+        }
+
+        var utmSource = getParameterByName('utm_source');
+        var utmMedium = getParameterByName('utm_medium');
+        var utmCampaign = getParameterByName('utm_campaign');
+        var utmContent = getParameterByName('utm_content');
+        var utmTerm = getParameterByName('utm_term');
+
+        if (utmSource && utmSource.toLowerCase() !== 'organico') {
+            if (isAdClick || utmSource) {
+                if (utmSource) setCookie('cookieUtmSource', utmSource, 63072000);
+                if (utmMedium) setCookie('cookieUtmMedium', utmMedium, 63072000);
+                if (utmCampaign) setCookie('cookieUtmCampaign', utmCampaign, 63072000);
+                if (utmContent) setCookie('cookieUtmContent', utmContent, 63072000);
+                if (utmTerm) setCookie('cookieUtmTerm', utmTerm, 63072000);
+            }
+        }
+
+        var parametros = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+        var utms = {};
+        var cookieUtmSource = getCookieValue('cookieUtmSource');
+        var cookieUtmMedium = getCookieValue('cookieUtmMedium');
+        var cookieUtmCampaign = getCookieValue('cookieUtmCampaign');
+        var cookieUtmContent = getCookieValue('cookieUtmContent');
+        var cookieUtmTerm = getCookieValue('cookieUtmTerm');
+
+        function getReferrerHost() {
+            var a = document.createElement('a');
+            a.href = document.referrer;
+            return a.hostname || '';
+        }
+
+        for (var pi = 0; pi < parametros.length; pi++) {
+            var el = parametros[pi];
+            if (el === "utm_source") {
+                utms[el] = getParameterByName(el) || (document.referrer ? (getParameterByName(el, document.referrer) || getReferrerHost()) : "direto");
+            } else {
+                utms[el] = getParameterByName(el) || getParameterByName(el, document.referrer) || "";
+            }
+        }
+
+        var scks = sck ? [sck] : [];
+        var srcValues = [];
+        if (cookieUtmSource) srcValues.push(cookieUtmSource);
+        if (cookieUtmMedium) srcValues.push(cookieUtmMedium);
+        if (cookieUtmCampaign) srcValues.push(cookieUtmCampaign);
+        if (cookieUtmContent) srcValues.push(cookieUtmContent);
+        if (cookieUtmTerm) srcValues.push(cookieUtmTerm);
+
+        var currentUrlParams = window.location.search ? window.location.search.substring(1) : '';
+        var currentParams = {};
+        if (currentUrlParams.length > 0) {
+            var pairs = currentUrlParams.split('&');
+            for (var ui = 0; ui < pairs.length; ui++) {
+                var pair = pairs[ui].split('=');
+                if (pair.length === 2) {
+                    currentParams[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+                }
+            }
+        }
+
+        var urlModified = false;
+        for (var key in utms) {
+            if (utms.hasOwnProperty(key) && !currentParams.hasOwnProperty(key) && utms[key] !== "") {
+                currentParams[key] = utms[key];
+                urlModified = true;
+            }
+        }
+        if (!currentParams.hasOwnProperty('src') && srcValues.length > 0) {
+            currentParams['src'] = srcValues.join('|');
+            urlModified = true;
+        }
+        if (!currentParams.hasOwnProperty('sck') && scks.length > 0) {
+            currentParams['sck'] = scks.join('|');
+            urlModified = true;
+        }
+
+        if (urlModified) {
+            var newSearch = '?';
+            var first = true;
+            for (var pk in currentParams) {
+                if (currentParams.hasOwnProperty(pk)) {
+                    if (!first) newSearch += '&';
+                    newSearch += encodeURIComponent(pk) + '=' + encodeURIComponent(currentParams[pk]);
+                    first = false;
+                }
+            }
+            window.history.replaceState(null, '', window.location.protocol + '//' + window.location.host + window.location.pathname + newSearch + window.location.hash);
+        }
+
+        function updateElementHref(href) {
+            try {
+                var elURL = document.createElement('a');
+                elURL.href = href;
+                if (elURL.host === window.location.host && elURL.pathname.indexOf('/checkout') === -1) return href;
+
+                var elSearch = elURL.search ? elURL.search.substring(1) : '';
+                var elParams = {};
+                if (elSearch.length > 0) {
+                    var epairs = elSearch.split('&');
+                    for (var ei = 0; ei < epairs.length; ei++) {
+                        var ep = epairs[ei].split('=');
+                        if (ep.length === 2) elParams[decodeURIComponent(ep[0])] = decodeURIComponent(ep[1]);
+                    }
+                }
+                var linkModified = false;
+                for (var lk in currentParams) {
+                    if (currentParams.hasOwnProperty(lk) && !elParams.hasOwnProperty(lk)) {
+                        elParams[lk] = currentParams[lk];
+                        linkModified = true;
+                    }
+                }
+                if (!elParams.hasOwnProperty('src') && srcValues.length > 0) {
+                    elParams['src'] = srcValues.join('|');
+                    linkModified = true;
+                }
+                if (!elParams.hasOwnProperty('sck') && scks.length > 0) {
+                    elParams['sck'] = scks.join('|');
+                    linkModified = true;
+                }
+                if (!linkModified) return href;
+                var ns = '?';
+                var nf = true;
+                for (var ek in elParams) {
+                    if (elParams.hasOwnProperty(ek)) {
+                        if (!nf) ns += '&';
+                        ns += encodeURIComponent(ek) + '=' + encodeURIComponent(elParams[ek]);
+                        nf = false;
+                    }
+                }
+                return elURL.protocol + '//' + elURL.host + elURL.pathname + ns + elURL.hash;
+            } catch (err) {
+                return href;
+            }
+        }
+
+        function trackLinks() {
+            var links = document.getElementsByTagName('a');
+            for (var li = 0; li < links.length; li++) {
+                if (links[li].href && !links[li].hasAttribute('data-ml-tracked')) {
+                    var nh = updateElementHref(links[li].href);
+                    if (nh !== links[li].href) links[li].href = nh;
+                    links[li].setAttribute('data-ml-tracked', 'true');
+                }
+            }
+        }
+
+        var observer = new MutationObserver(function () { trackLinks(); });
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            document.addEventListener('DOMContentLoaded', function () {
+                observer.observe(document.body, { childList: true, subtree: true });
+            });
+        }
+        setTimeout(trackLinks, 1000);
+    })();
+    </script>
   </body>
 </html>
