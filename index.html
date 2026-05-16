@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!-- sck antes do GTM: mesmo ID do início ao checkout (Stape Store / SKR) -->
+    <script src="/sck-bootstrap.js"></script>
+
     <!-- Google Tag Manager (snippet oficial — tagmanager.google.com) -->
     <!-- Não injectar em /admin* no primeiro paint (SPA: ver também stripMarketingTagsOnAdmin) -->
     <script>(function(w,d,s,l,i){try{var p=(w.location&&w.location.pathname)||'';if(p==='/admin'||p.indexOf('/admin/')===0||p.indexOf('/app/admin')===0)return;}catch(e){}
@@ -346,10 +349,15 @@
         }
 
         var cookieName = "index";
-        var sck = getCookieValue(cookieName) || getSckFromAppStorage() || localStorage.getItem(cookieName) || "";
+        var sck = (typeof window.__ML_SCK__ === 'string' && window.__ML_SCK__)
+            || getCookieValue(cookieName)
+            || getSckFromAppStorage()
+            || localStorage.getItem(cookieName)
+            || "";
 
         var expirationTime = 34560000;
         if (sck) {
+            window.__ML_SCK__ = sck;
             setCookie(cookieName, sck, expirationTime);
             localStorage.setItem(cookieName, sck);
             sessionStorage.setItem(cookieName, sck);
