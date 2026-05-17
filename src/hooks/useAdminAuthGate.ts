@@ -125,23 +125,24 @@ export function useAdminAuthGate(params: { navigate: Navigate; pathname: string 
           authorize(cachedRole);
           return;
         }
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .limit(1)
-          .then(({ data }) => {
-            const roleValue = data?.[0]?.role;
-            const isAdmin = roleValue === 'admin' || String(roleValue) === 'admin';
-            const isCollaborator = roleValue === 'collaborator' || String(roleValue) === 'collaborator';
-            if (!isAdmin && !isCollaborator) return;
-            const role: UserRole = isAdmin ? 'admin' : 'collaborator';
-            setCachedRole(role);
-            authorize(role);
-          })
-          .catch((err) => {
-            console.error('Erro ao verificar role após renovação:', err);
-          });
+        void Promise.resolve(
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .limit(1)
+            .then(({ data }) => {
+              const roleValue = data?.[0]?.role;
+              const isAdmin = roleValue === 'admin' || String(roleValue) === 'admin';
+              const isCollaborator = roleValue === 'collaborator' || String(roleValue) === 'collaborator';
+              if (!isAdmin && !isCollaborator) return;
+              const role: UserRole = isAdmin ? 'admin' : 'collaborator';
+              setCachedRole(role);
+              authorize(role);
+            }),
+        ).catch((err) => {
+          console.error('Erro ao verificar role após renovação:', err);
+        });
         return;
       }
 

@@ -6,6 +6,12 @@
 
 import { retry, RetryOptions } from './retry';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
+
+function toQuizInsertRow(payload: QuizPayload): TablesInsert<'quizzes'> {
+  const { language, ...rest } = payload;
+  return { ...rest, language: language ?? 'pt' };
+}
 
 export interface QuizPayload {
   user_id?: string | null;
@@ -168,7 +174,8 @@ async function performInsert(
 
         // ✅ UPSERT: Usar upsert se tiver session_id para garantir idempotência
         // ✅ CORREÇÃO: Verificar se quiz já está associado a pedido antes de fazer UPSERT
-        let mutationQuery = supabase.from('quizzes').insert(quizPayload);
+        const quizRow = toQuizInsertRow(quizPayload);
+        let mutationQuery = supabase.from('quizzes').insert(quizRow);
         
         if (quizPayload.session_id) {
           // Verificar se já existe quiz com este session_id e se está associado a um pedido
@@ -191,24 +198,24 @@ async function performInsert(
               // ✅ CORREÇÃO: Não usar session_id para novo quiz (evitar conflito de constraint unique)
               console.log(`[QuizInsert] Quiz com session_id ${quizPayload.session_id} já está associado a pedido ${existingOrder.id}, criando novo quiz sem session_id`);
               const newQuizPayload = { ...quizPayload, session_id: undefined };
-              mutationQuery = supabase.from('quizzes').insert(newQuizPayload);
+              mutationQuery = supabase.from('quizzes').insert(toQuizInsertRow(newQuizPayload));
             } else {
               // Quiz existe mas não está associado a pedido - pode atualizar
-              mutationQuery = supabase.from('quizzes').upsert(quizPayload, {
+              mutationQuery = supabase.from('quizzes').upsert(quizRow, {
                 onConflict: 'session_id',
                 ignoreDuplicates: false // Atualiza se já existe
               });
             }
           } else {
             // Quiz não existe - pode fazer upsert normalmente
-            mutationQuery = supabase.from('quizzes').upsert(quizPayload, {
+            mutationQuery = supabase.from('quizzes').upsert(quizRow, {
               onConflict: 'session_id',
               ignoreDuplicates: false // Atualiza se já existe
             });
           }
         } else {
           // Fallback para insert se não tiver session_id
-          mutationQuery = supabase.from('quizzes').insert(quizPayload);
+          mutationQuery = supabase.from('quizzes').insert(quizRow);
         }
         
         const { data, error } = await mutationQuery

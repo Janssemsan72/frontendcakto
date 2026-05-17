@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, queryClient } from '@/lib/queryClient';
 import { supabase, isSupabaseReady } from '@/integrations/supabase/client';
+import { asOrderStatus, asPaymentProvider, asPlanType } from '@/integrations/supabase/enums';
 import { toast } from 'sonner';
 import { sendReleaseWebhook } from '@/utils/webhook';
 
@@ -17,7 +18,7 @@ async function countOrdersPaginated(filters?: {
   let query = supabase.from("orders").select("id", { count: 'exact', head: true });
   
   if (filters?.status) {
-    query = query.eq("status", filters.status);
+    query = query.eq("status", asOrderStatus(filters.status));
   }
   
   if (filters?.provider === 'stripe') {
@@ -46,11 +47,11 @@ async function countOrdersPaginated(filters?: {
     let countQuery = supabase.from("orders").select("id");
     
     if (filters?.status) {
-      countQuery = countQuery.eq("status", filters.status);
+      countQuery = countQuery.eq("status", asOrderStatus(filters.status));
     }
     
     if (filters?.plan) {
-      countQuery = countQuery.eq("plan", filters.plan);
+      countQuery = countQuery.eq("plan", asPlanType(filters.plan));
     }
     
     if (filters?.provider === 'stripe') {
@@ -150,7 +151,7 @@ async function fetchRevenueAggregate(filters?: {
         .from("orders")
         .select("amount_cents")
         .eq("status", "paid")
-        .eq("plan", filters.plan!);
+        .eq("plan", asPlanType(filters.plan!));
       
       if (filters?.provider === 'stripe') {
         query = query.or("payment_provider.eq.stripe,provider.eq.stripe");
@@ -1172,15 +1173,15 @@ export function useOrders(filters?: {
       
       // Aplicar filtros na query do Supabase
       if (filters?.status && filters.status !== 'all') {
-        baseQuery = baseQuery.eq('status', filters.status);
+        baseQuery = baseQuery.eq('status', asOrderStatus(filters.status));
       }
       
       if (filters?.plan && filters.plan !== 'all') {
-        baseQuery = baseQuery.eq('plan', filters.plan);
+        baseQuery = baseQuery.eq('plan', asPlanType(filters.plan));
       }
       
       if (filters?.provider && filters.provider !== 'all') {
-        baseQuery = baseQuery.eq('payment_provider', filters.provider);
+        baseQuery = baseQuery.eq('payment_provider', asPaymentProvider(filters.provider));
       }
       
       // ✅ BUSCA OTIMIZADA: Buscar por email, telefone, nome ou ID
@@ -1425,15 +1426,15 @@ export function useOrdersStats(filters?: {
             .in('id', allOrderIds);
           
           if (filters?.status && filters.status !== 'all') {
-            query = query.eq('status', filters.status);
+            query = query.eq('status', asOrderStatus(filters.status));
           }
           
           if (filters?.plan && filters.plan !== 'all') {
-            query = query.eq('plan', filters.plan);
+            query = query.eq('plan', asPlanType(filters.plan));
           }
           
           if (filters?.provider && filters.provider !== 'all') {
-            query = query.eq('payment_provider', filters.provider);
+            query = query.eq('payment_provider', asPaymentProvider(filters.provider));
           }
           
           const { data: filteredData } = await query;
@@ -1477,15 +1478,15 @@ export function useOrdersStats(filters?: {
           let query = supabase.from("orders").select("id", { count: 'exact', head: true });
           
           if (filters?.status && filters.status !== 'all') {
-            query = query.eq('status', filters.status);
+            query = query.eq('status', asOrderStatus(filters.status));
           }
           
           if (filters?.plan && filters.plan !== 'all') {
-            query = query.eq('plan', filters.plan);
+            query = query.eq('plan', asPlanType(filters.plan));
           }
           
           if (filters?.provider && filters.provider !== 'all') {
-            query = query.eq('payment_provider', filters.provider);
+            query = query.eq('payment_provider', asPaymentProvider(filters.provider));
           }
           
           return query;
@@ -2597,15 +2598,15 @@ export function usePayments(filters?: {
         
         // ✅ OTIMIZAÇÃO: Aplicar filtros na query (mais eficiente)
         if (filters?.status && filters.status !== 'all') {
-          query = query.eq('status', filters.status);
+          query = query.eq('status', asOrderStatus(filters.status));
         }
         
         if (filters?.plan && filters.plan !== 'all') {
-          query = query.eq('plan', filters.plan);
+          query = query.eq('plan', asPlanType(filters.plan));
         }
         
         if (filters?.provider && filters.provider !== 'all') {
-          query = query.eq('payment_provider', filters.provider);
+          query = query.eq('payment_provider', asPaymentProvider(filters.provider));
         }
         
         const { data: pageData, error } = await query.range(from, from + pageSize - 1);
@@ -2632,8 +2633,10 @@ export function usePayments(filters?: {
  * Hook para carregar créditos Suno
  * Cache: 2 minutos
  */
+type SunoCreditsSummary = { total: number; used: number; remaining: number };
+
 export function useSunoCredits() {
-  return useQuery({
+  return useQuery<SunoCreditsSummary>({
     queryKey: queryKeys.dashboard.sunoCredits(),
     queryFn: async () => {
       // ✅ CORREÇÃO: Buscar pelo ID fixo usado pela função deduct_suno_credits

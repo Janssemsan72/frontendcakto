@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmailTemplate, EmailType } from "@/types/admin";
 
+const EMAIL_TEMPLATES_TABLE = {
+  pt: "email_templates_pt",
+  en: "email_templates_en",
+  es: "email_templates_es",
+} as const;
+
+type EmailTemplatesTable = (typeof EMAIL_TEMPLATES_TABLE)[keyof typeof EMAIL_TEMPLATES_TABLE];
+
 interface UseEmailTemplatesOptions {
   templateTypes?: EmailType[];
   languages?: string[];
@@ -20,8 +28,10 @@ export function useEmailTemplates(options: UseEmailTemplatesOptions = {}) {
       const allTemplates: EmailTemplate[] = [];
       
       for (const lang of languages) {
+        const table = EMAIL_TEMPLATES_TABLE[lang as keyof typeof EMAIL_TEMPLATES_TABLE];
+        if (!table) continue;
         const { data, error } = await supabase
-          .from(`email_templates_${lang}`)
+          .from(table)
           .select('*')
           .in('template_type', templateTypes)
           .order('template_type');
@@ -32,10 +42,10 @@ export function useEmailTemplates(options: UseEmailTemplatesOptions = {}) {
         }
 
         // Adicionar informação do idioma
-        const templatesWithLang = data?.map(template => ({
-          ...template,
-          language: lang
-        })) || [];
+        const templatesWithLang = (data ?? []).map((template) => ({
+          ...(template as unknown as EmailTemplate),
+          language: lang,
+        }));
 
         allTemplates.push(...templatesWithLang);
       }
@@ -73,8 +83,9 @@ export function useEmailTemplates(options: UseEmailTemplatesOptions = {}) {
       updates: Partial<EmailTemplate>; 
       language: string;
     }) => {
+      const table = EMAIL_TEMPLATES_TABLE[language as keyof typeof EMAIL_TEMPLATES_TABLE] as EmailTemplatesTable;
       const { error } = await supabase
-        .from(`email_templates_${language}`)
+        .from(table)
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -94,12 +105,15 @@ export function useEmailTemplates(options: UseEmailTemplatesOptions = {}) {
       template: Omit<EmailTemplate, 'id' | 'created_at' | 'updated_at'>; 
       language: string;
     }) => {
+      const table = EMAIL_TEMPLATES_TABLE[language as keyof typeof EMAIL_TEMPLATES_TABLE] as EmailTemplatesTable;
       const { error } = await supabase
-        .from(`email_templates_${language}`)
+        .from(table)
         .insert({
-          ...template,
+          template_type: template.template_type,
+          subject: template.subject,
+          html_content: template.content,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
@@ -115,8 +129,9 @@ export function useEmailTemplates(options: UseEmailTemplatesOptions = {}) {
       templateId: string; 
       language: string;
     }) => {
+      const table = EMAIL_TEMPLATES_TABLE[language as keyof typeof EMAIL_TEMPLATES_TABLE] as EmailTemplatesTable;
       const { error } = await supabase
-        .from(`email_templates_${language}`)
+        .from(table)
         .delete()
         .eq('id', templateId);
 

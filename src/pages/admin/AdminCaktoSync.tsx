@@ -340,15 +340,17 @@ export default function AdminCaktoSync() {
       }
 
       // 3. Registrar no admin_logs
+      const adminUserId = (await supabase.auth.getUser()).data.user?.id;
       await supabase.from("admin_logs").insert({
         action: "mark_order_paid_from_csv",
-        details: {
-          order_id: match.orderId,
+        target_table: "orders",
+        target_id: match.orderId,
+        admin_user_id: adminUserId ?? null,
+        changes: {
           cakto_id: match.csvOrder.idVenda,
           email: match.csvOrder.email,
           source: "cakto_csv_sync",
         },
-        user_id: (await supabase.auth.getUser()).data.user?.id,
       });
 
       setProcessedCount((prev) => prev + 1);

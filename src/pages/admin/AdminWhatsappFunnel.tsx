@@ -711,7 +711,8 @@ export default function AdminWhatsappFunnel() {
         throw error;
       }
 
-      const result = data as { funnels_created: number; orders_processed: string[] } | null;
+      const rpcPayload = Array.isArray(data) ? data[0] : data;
+      const result = rpcPayload as { funnels_created: number; orders_processed: string[] } | null;
       
       if (result && result.funnels_created > 0) {
         toast.success(`${result.funnels_created} funil(is) criado(s) com sucesso!`);
@@ -1815,7 +1816,7 @@ export default function AdminWhatsappFunnel() {
       toast.info('Disparando todos os funis pendentes...');
 
       console.log('📤 [AdminWhatsappFunnel] Chamando dispatch-all-pending-funnels...');
-      console.log('🔍 [AdminWhatsappFunnel] Supabase URL:', supabase.supabaseUrl);
+      console.log('🔍 [AdminWhatsappFunnel] Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       console.log('🔍 [AdminWhatsappFunnel] Verificando autenticação...');
       
       // Verificar se usuário está autenticado

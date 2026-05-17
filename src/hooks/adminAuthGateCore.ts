@@ -210,17 +210,18 @@ export async function runAdminAuthCheck(params: {
       clearMainTimeout();
       maxCheckAttemptsRef.current = 0;
 
-      supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .limit(1)
-        .then(({ data }) => {
-          const roleValue = data?.[0]?.role;
-          const actual = roleValue === 'admin' ? 'admin' : 'collaborator';
-          if (actual !== cachedRole) setCachedRole(actual);
-        })
-        .catch(() => void 0);
+      void Promise.resolve(
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .limit(1)
+          .then(({ data }) => {
+            const roleValue = data?.[0]?.role;
+            const actual = roleValue === 'admin' ? 'admin' : 'collaborator';
+            if (actual !== cachedRole) setCachedRole(actual);
+          }),
+      ).catch(() => void 0);
 
       return;
     }

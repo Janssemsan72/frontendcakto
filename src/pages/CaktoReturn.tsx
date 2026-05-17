@@ -157,7 +157,7 @@ export default function CaktoReturn() {
           });
         });
         return;
-      } else if (order.status === 'cancelled' || order.status === 'failed') {
+      } else if (order.status === 'failed' || order.status === 'refunded') {
         setStatus('failed');
         return;
       }

@@ -279,7 +279,7 @@ export default function AdminLyrics() {
           logger.error('Erro ao buscar letras por email', error);
           setSearchResults([]);
         } else {
-          setSearchResults((allApprovals || []) as LyricsApproval[]);
+          setSearchResults((allApprovals || []) as unknown as LyricsApproval[]);
         }
       } catch (error) {
         logger.error('Erro ao buscar letras por email', error);

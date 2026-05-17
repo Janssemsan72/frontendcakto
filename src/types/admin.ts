@@ -85,7 +85,7 @@ export interface LyricsApproval {
   created_at: string;
   rejection_reason?: string;
   regeneration_count: number;
-  approval_token: string;
+  approval_token?: string;
   voice?: 'M' | 'F' | 'S'; // M = Masculino, F = Feminino, S = Sem preferência
   is_highlighted?: boolean; // Destacar letra
   orders: {

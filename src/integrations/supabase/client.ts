@@ -159,3 +159,6 @@ export function ensureSupabaseInitialized(): void {
 
 // Exportar tipos úteis
 export type { SupabaseClient };
+
+/** Tabelas legadas / nomes dinâmicos ausentes do schema gerado (ex.: módulo financeiro). */
+export const supabaseSchema = supabase as SupabaseClient;

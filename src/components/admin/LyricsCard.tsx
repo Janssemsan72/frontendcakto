@@ -104,21 +104,22 @@ export const LyricsCard = memo(function LyricsCard({
     if (showLyricsDialog && !loadedLyrics && !isLoadingLyrics) {
       setIsLoadingLyrics(true);
       // Carregar lyrics apenas quando necessário
-      supabase
-        .from('lyrics_approvals')
-        .select('lyrics')
-        .eq('id', approval.id)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data?.lyrics) {
-            setLoadedLyrics(data.lyrics);
-          }
-          setIsLoadingLyrics(false);
-        })
-        .catch((err) => {
-          logger.warn('Erro ao carregar lyrics', err);
-          setIsLoadingLyrics(false);
-        });
+      void Promise.resolve(
+        supabase
+          .from('lyrics_approvals')
+          .select('lyrics')
+          .eq('id', approval.id)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data?.lyrics) {
+              setLoadedLyrics(data.lyrics);
+            }
+            setIsLoadingLyrics(false);
+          }),
+      ).catch((err: unknown) => {
+        logger.warn('Erro ao carregar lyrics', { err });
+        setIsLoadingLyrics(false);
+      });
     }
   }, [showLyricsDialog, approval.id, loadedLyrics, isLoadingLyrics]);
 

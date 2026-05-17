@@ -4,7 +4,7 @@
  * Exporta o cliente e tipos para uso em toda a aplicação
  */
 
-export { supabase, isSupabaseReady, ensureSupabaseInitialized } from './client';
+export { supabase, supabaseSchema, isSupabaseReady, ensureSupabaseInitialized } from './client';
 export type { Database, Tables, TablesInsert, TablesUpdate } from './types';
 export type {
   Quiz,
@@ -15,8 +15,5 @@ export type {
   EmailTemplate,
   Testimonial,
   FAQ,
-  RegionalPricing,
-  AdminUser,
-  Collaborator,
   Affiliate,
 } from './types';

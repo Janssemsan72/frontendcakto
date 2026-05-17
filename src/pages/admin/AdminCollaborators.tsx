@@ -140,7 +140,7 @@ export default function AdminCollaborators() {
       // Buscar colaboradores
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
-        .select("id, user_id, role, permissions, created_at, updated_at")
+        .select("id, user_id, role, created_at")
         .eq("role", "collaborator")
         .order("created_at", { ascending: false });
 

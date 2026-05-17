@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { asSongStatus } from "@/integrations/supabase/enums";
 
 interface Song {
   id: string;
@@ -75,7 +76,7 @@ export function useSongGrouping(options: UseSongGroupingOptions = {}) {
             )
           )
         `)
-        .in('status', status)
+        .in('status', status.map(asSongStatus))
         .is('released_at', null)
         .not('audio_url', 'is', null)
         .order(orderBy, { ascending: orderDirection === 'asc' });

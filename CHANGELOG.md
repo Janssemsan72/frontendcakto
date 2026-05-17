@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `npm run typecheck`: `src/integrations/supabase/types.ts` regenerado via MCP **user-supabase** (projeto `zagkvtxarndluusiluhb`); `createClient<Database>` restaurado; `supabaseSchema` para tabelas fora do schema gerado (`system_settings`, `financial_*`); helpers em `enums.ts` (`asOrderStatus`, `asPlanType`, `asPaymentProvider`, `asSongStatus`); ajustes em admin (`admin_logs`, colaboradores, templates de email, CaktoReturn, quiz insert).
+
 - CSP (`vercel.json`): `https://api.musiclovely.online` em `script-src`, `script-src-elem`, `connect-src` e `frame-src` para o loader Stape no site `www.musiclovely.online`.
 
 - `adminMarketingOptOut`: remove scripts do loader Stape em `.online` e `.com.br` ao entrar em rotas admin.

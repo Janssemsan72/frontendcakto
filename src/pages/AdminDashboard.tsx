@@ -156,7 +156,11 @@ export default function AdminDashboard() {
         .range(from, to);
 
       if (jobsResult.data) {
-        setJobs(jobsResult.data);
+        const normalizedJobs: Job[] = jobsResult.data.map((row) => ({
+          ...row,
+          orders: Array.isArray(row.orders) ? row.orders[0] : row.orders,
+        }));
+        setJobs(normalizedJobs);
         setJobsTotal(totalCount || 0);
       }
     } catch (error) {
@@ -182,7 +186,13 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (songsResult.data) setSongs(songsResult.data);
+      if (songsResult.data) {
+        const normalizedSongs: Song[] = songsResult.data.map((row) => ({
+          ...row,
+          orders: Array.isArray(row.orders) ? row.orders[0] : row.orders,
+        }));
+        setSongs(normalizedSongs);
+      }
       hasLoadedSongsRef.current = true;
     } catch (error) {
       if ((error as any)?.name !== "AbortError") {

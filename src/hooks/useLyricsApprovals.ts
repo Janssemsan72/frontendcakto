@@ -150,7 +150,7 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
         
         // ✅ OTIMIZAÇÃO: Removida busca de songs - carregar apenas quando necessário (lazy loading)
         logger.debug('Lyrics approvals loaded', { count: pageData?.length || 0, limit, offset });
-        return (pageData || []) as LyricsApproval[];
+        return (pageData || []) as unknown as LyricsApproval[];
       } catch (queryError: any) {
         if (isDev) {
           console.error('❌ [useLyricsApprovals] Erro ao executar query:', queryError);
@@ -212,13 +212,13 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
         const { count, error } = await countQuery;
 
         if (error) {
-          logger.warn('Erro ao contar lyrics approvals', error);
+          logger.warn('Erro ao contar lyrics approvals', { error });
           return await countManually();
         }
 
         return count ?? 0;
       } catch (error) {
-        logger.warn('Erro ao contar lyrics approvals', error);
+        logger.warn('Erro ao contar lyrics approvals', { error });
         if (isDev) {
           console.error('❌ [useLyricsApprovals] Erro na contagem:', error);
         }
@@ -473,7 +473,7 @@ export function useLyricsApprovals(options: UseLyricsApprovalsOptions = {}) {
           
           // Subscrever apenas uma vez
           sharedRealtimeChannel.subscribe((status) => {
-            logger.debug('Status da subscription realtime:', status);
+            logger.debug('Status da subscription realtime:', { status });
             // Logs removidos para reduzir verbosidade - apenas erros críticos serão logados
             if (status === 'CHANNEL_ERROR' && isDev) {
               console.error('❌ [Realtime] Erro na subscription');

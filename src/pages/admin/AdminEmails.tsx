@@ -148,7 +148,7 @@ export default function AdminEmails() {
 
       if (error) throw error;
       
-      const emails = data || [];
+      const emails = (data || []) as ReceivedEmail[];
       setReceivedEmails(emails);
       
       // Agrupar emails por thread_id

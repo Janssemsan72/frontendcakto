@@ -62,7 +62,8 @@ const Quiz = memo(() => {
     vocalGender: '',
     qualities: '',
     memories: '',
-    message: ''
+    message: '',
+    occasion: '',
   });
 
   const [errors, setErrors] = useState<ValidationError[]>([]);
