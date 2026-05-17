@@ -1,9 +1,6 @@
-import { ensureSckSession, pushSckToDataLayer } from '@/utils/sckSession';
-
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
-    __ML_SCK__?: string;
   }
 }
 
@@ -96,9 +93,25 @@ function getFbp(): string | null {
 // ---------------------------------------------------------------------------
 
 export function getOrCreateSck(): string {
-  const fromBootstrap = typeof window !== 'undefined' ? window.__ML_SCK__ : undefined;
-  const sck = fromBootstrap || ensureSckSession();
-  pushSckToDataLayer(sck);
+  try {
+    const saved = localStorage.getItem('musiclovely_tracking_params');
+    if (saved) {
+      const params = JSON.parse(saved);
+      if (params.sck) return params.sck;
+    }
+  } catch {
+    // ignore
+  }
+
+  const sck = crypto.randomUUID();
+  try {
+    const saved = localStorage.getItem('musiclovely_tracking_params');
+    const params = saved ? JSON.parse(saved) : {};
+    params.sck = sck;
+    localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
+  } catch {
+    // ignore
+  }
   return sck;
 }
 
@@ -177,15 +190,11 @@ export function pushToDataLayer(event: string, data?: Record<string, unknown>): 
     const eventUserData = (data?.user_data as Record<string, string>) || {};
     const mergedUserData = { ...userData, ...eventUserData };
 
-    const sck =
-      (typeof window !== 'undefined' && window.__ML_SCK__) || ensureSckSession();
-
     const enriched: Record<string, unknown> = {
       event,
       event_id: crypto.randomUUID(),
-      sck,
       ...data,
-      user_data: { ...mergedUserData, external_id: sck },
+      user_data: mergedUserData,
     };
 
     window.dataLayer.push(enriched);

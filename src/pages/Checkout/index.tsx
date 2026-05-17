@@ -43,14 +43,6 @@ import {
   isExternalPaymentUrl,
   isPaymentUrlStaleForCurrentGateway,
 } from '@/config/paymentCheckout';
-import {
-  CHECKOUT_REDIRECT_RECOVERY,
-  clearExternalCheckoutRecovery,
-  navigateToExternalPayment,
-  scheduleExternalCheckoutRecovery,
-} from '@/utils/externalCheckoutRedirect';
-import { appendExternalCheckoutTracking } from '@/utils/hotmartTrackingParams';
-
 function saveGAClientIdForOrder(orderId: string) {
   const cid = getGAClientId();
   if (!cid) return;
@@ -256,7 +248,11 @@ export default function Checkout() {
     caktoParams.set('redirect_url', redirectUrl);
     
     const safeUtms = utms || {};
-    appendExternalCheckoutTracking(caktoParams, safeUtms);
+    Object.entries(safeUtms).forEach(([key, value]) => {
+      if (value && ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'src', 'sck'].includes(key)) {
+        caktoParams.set(key, value as string);
+      }
+    });
 
     return `${CAKTO_PAYMENT_URL}?${caktoParams.toString()}`;
   };
@@ -347,9 +343,20 @@ export default function Checkout() {
         hostname: window.location.hostname
       });
 
-      // WebViews / in-app browsers: location.replace sozinho pode falhar após await
-      navigateToExternalPayment(caktoUrl);
-      scheduleExternalCheckoutRecovery(caktoUrl);
+      logger.debug('redirectToCakto: Executando redirecionamento imediato com window.location.replace()');
+      try {
+        window.location.replace(caktoUrl);
+        logger.debug('redirectToCakto: window.location.replace() executado com sucesso');
+      } catch (error) {
+        logger.error('redirectToCakto: Erro ao executar window.location.replace()', error);
+        try {
+          window.location.href = caktoUrl;
+          logger.debug('redirectToCakto: Fallback para window.location.href executado');
+        } catch (hrefError) {
+          logger.error('redirectToCakto: Erro também no fallback href', hrefError);
+          return false;
+        }
+      }
 
       return true;
     } catch (error) {
@@ -440,30 +447,10 @@ export default function Checkout() {
   const [retryCount, setRetryCount] = useState(0);
   const [shouldRedirect, setShouldRedirect] = useState(false); // ✅ Adicionar estado que estava faltando
   const [lastClickTime, setLastClickTime] = useState(0);
-  /** Link manual se o redirecionamento automático falhar (ex.: WebView Instagram/Facebook). */
-  const [paymentFallbackUrl, setPaymentFallbackUrl] = useState<string | null>(null);
   const [quizPersistFailed, setQuizPersistFailed] = useState(false);
   const earlyFailedPayloadRef = useRef<QuizPayload | null>(null);
   const earlyOrderIdRef = useRef<string | null>(null);
   const earlyOrderQuizIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const onRecovery = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ url: string }>).detail;
-      if (!detail?.url) return;
-      setProcessing(false);
-      setLastClickTime(0);
-      setPaymentFallbackUrl(detail.url);
-      toast.message(t('checkout.paymentRedirectFallbackToastTitle'), {
-        description: t('checkout.paymentRedirectFallbackToastDesc'),
-      });
-    };
-    window.addEventListener(CHECKOUT_REDIRECT_RECOVERY, onRecovery);
-    return () => {
-      window.removeEventListener(CHECKOUT_REDIRECT_RECOVERY, onRecovery);
-      clearExternalCheckoutRecovery();
-    };
-  }, [t]);
 
   // ✅ OTIMIZAÇÃO CRÍTICA: Deferir loading inicial para não bloquear renderização
   // Mostrar botão imediatamente, carregar dados depois
@@ -1860,9 +1847,6 @@ export default function Checkout() {
       return;
     }
 
-    clearExternalCheckoutRecovery();
-    setPaymentFallbackUrl(null);
-
     // ✅ Definir processing=true imediatamente após validações para mostrar "Processando..."
     // ✅ IMPORTANTE: Este estado NÃO deve ser resetado antes do redirecionamento quando tudo está correto
     // ✅ O botão ficará em loading até o redirecionamento acontecer
@@ -2014,8 +1998,7 @@ export default function Checkout() {
           content_category: 'checkout',
         });
         clearQuizSessionId();
-        navigateToExternalPayment(finalRedirectUrl);
-        scheduleExternalCheckoutRecovery(finalRedirectUrl);
+        window.location.href = finalRedirectUrl;
         return;
       }
       
@@ -2357,8 +2340,7 @@ export default function Checkout() {
       });
 
       // ✅ REDIRECIONAR AGORA (apenas se pedido foi criado)
-      navigateToExternalPayment(redirectUrl);
-      scheduleExternalCheckoutRecovery(redirectUrl);
+      window.location.href = redirectUrl;
       return; // Sair da função - redirecionamento já iniciado
       
     } catch (error: unknown) {
@@ -2633,21 +2615,6 @@ export default function Checkout() {
                     <p className="text-sm text-destructive">{whatsappError}</p>
                   )}
                 </div>
-
-                {paymentFallbackUrl && (
-                  <div
-                    role="status"
-                    className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-50"
-                  >
-                    <p className="font-semibold mb-1">{t('checkout.paymentRedirectFallbackTitle')}</p>
-                    <p className="text-xs opacity-90 mb-3">{t('checkout.paymentRedirectFallbackHint')}</p>
-                    <Button asChild variant="secondary" className="w-full" size="sm">
-                      <a href={paymentFallbackUrl} target="_top" rel="noopener noreferrer">
-                        {t('checkout.openPaymentPage')}
-                      </a>
-                    </Button>
-                  </div>
-                )}
 
                 {/* ✅ Botão acima dos planos (mobile only) */}
                 <Button

@@ -3,17 +3,13 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- sck antes do GTM: mesmo ID do início ao checkout (Stape Store / SKR) -->
-    <script src="/sck-bootstrap.js"></script>
-
-    <!-- Google Tag Manager (snippet oficial — tagmanager.google.com) -->
-    <!-- Não injectar em /admin* no primeiro paint (SPA: ver também stripMarketingTagsOnAdmin) -->
+    <!-- Google Tag Manager (Stape server-side — api.musiclovely.online) -->
     <script>(function(w,d,s,l,i){try{var p=(w.location&&w.location.pathname)||'';if(p==='/admin'||p.indexOf('/admin/')===0||p.indexOf('/app/admin')===0)return;}catch(e){}
     w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-TKPCMTNB');</script>
+    j=d.createElement(s);j.async=true;j.src='https://api.musiclovely.online/63grxzipls.js?'+i;
+    f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',
+    '9b=GghNLi41XzM4PDMkLjYwQQVRQkdLXhYJTgEFGhMbHggFCRwQVBsdCg%3D%3D');</script>
     <!-- End Google Tag Manager -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -146,12 +142,12 @@
     <link rel="preconnect" href="https://zagkvtxarndluusiluhb.supabase.co" crossorigin />
     <link rel="preconnect" href="https://pay.cakto.com.br" crossorigin />
     
-    <!-- Preconnect: GTM (googletagmanager.com) + Facebook -->
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <!-- Preconnect para GTM Stape e Facebook (críticos para tracking) -->
+    <link rel="preconnect" href="https://api.musiclovely.online" crossorigin />
     <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     
     <!-- ✅ OTIMIZAÇÃO: DNS prefetch para domínios de terceiros (menos críticos) -->
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://api.musiclovely.online" />
     <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
     <link rel="dns-prefetch" href="https://pay.cakto.com.br" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
@@ -237,7 +233,7 @@
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TKPCMTNB"
+    <noscript><iframe src="https://api.musiclovely.online/ns.html?id=GTM-TKPCMTNB"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
@@ -278,23 +274,8 @@
       })();
     </script>
 
-    <!-- UTM / src / sck no funil (hotmart 2026); domínio .online e .com.br; não corre em /admin -->
     <script>
     (function () {
-        try {
-            var p = (window.location && window.location.pathname) || '';
-            if (p === '/admin' || p.indexOf('/admin/') === 0 || p.indexOf('/app/admin') === 0) return;
-        } catch (e) { return; }
-
-        function getTrackingCookieDomain() {
-            var h = (location.hostname || '').toLowerCase();
-            if (h === 'localhost' || h === '127.0.0.1') return '';
-            if (h.indexOf('musiclovely.online') !== -1) return '.musiclovely.online';
-            if (h.indexOf('musiclovely.com.br') !== -1) return '.musiclovely.com.br';
-            if (h.indexOf('musiclovely.com') !== -1) return '.musiclovely.com';
-            return '';
-        }
-
         function getParameterByName(name, url) {
             if (!url) url = window.location.href;
             name = name.replace(/[\[\]]/g, "\\$&");
@@ -309,74 +290,64 @@
             var cookiePath = "/";
             expirationTime = expirationTime * 1000;
             var date = new Date();
-            date.setTime(date.getTime() + expirationTime);
+            var dateTimeNow = date.getTime();
+            date.setTime(dateTimeNow + expirationTime);
             var expirationDate = date.toUTCString();
-            var domain = getTrackingCookieDomain();
-            var cookieStr = cookieName + "=" + encodeURIComponent(cookieValue) + "; expires=" + expirationDate + "; path=" + cookiePath + "; SameSite=Lax";
-            if (domain) cookieStr += "; domain=" + domain;
-            document.cookie = cookieStr;
+            var domain = ".musiclovely.online";
+            document.cookie = cookieName + "=" + cookieValue + "; expires=" + expirationDate + "; path=" + cookiePath + "; domain=" + domain;
         }
 
         function getCookieValue(name) {
             var nameEQ = name + "=";
             var ca = document.cookie.split(';');
-            for (var i = 0; i < ca.length; i++) {
+            for (var i=0;i < ca.length;i++) {
                 var c = ca[i];
-                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+                while (c.charAt(0)==' ') c=c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
             }
             return null;
         }
 
-        function getSckFromAppStorage() {
-            try {
-                var saved = localStorage.getItem('musiclovely_tracking_params');
-                if (saved) {
-                    var params = JSON.parse(saved);
-                    if (params && params.sck) return params.sck;
-                }
-            } catch (e) {}
-            return null;
-        }
-
-        function persistSckToAppStorage(sck) {
-            try {
-                var saved = localStorage.getItem('musiclovely_tracking_params');
-                var params = saved ? JSON.parse(saved) : {};
-                params.sck = sck;
-                localStorage.setItem('musiclovely_tracking_params', JSON.stringify(params));
-            } catch (e) {}
-        }
-
         var cookieName = "index";
-        var sck = (typeof window.__ML_SCK__ === 'string' && window.__ML_SCK__)
-            || getCookieValue(cookieName)
-            || getSckFromAppStorage()
-            || localStorage.getItem(cookieName)
-            || "";
+        var sck = getCookieValue(cookieName);
+
+        if (!sck) {
+            sck = localStorage.getItem(cookieName);
+        }
+
+        if (!sck || sck === '') {
+            sck = "";
+        }
 
         var expirationTime = 34560000;
-        if (sck) {
-            window.__ML_SCK__ = sck;
+        if(sck) {
             setCookie(cookieName, sck, expirationTime);
             localStorage.setItem(cookieName, sck);
             sessionStorage.setItem(cookieName, sck);
-            persistSckToAppStorage(sck);
         }
 
         var dateCookieName = "entry_date";
-        var entryDate = getCookieValue(dateCookieName) || localStorage.getItem(dateCookieName);
+        var entryDate = getCookieValue(dateCookieName);
+
         if (!entryDate) {
-            entryDate = String(Date.now());
-            setCookie(dateCookieName, entryDate, 34560000);
+            entryDate = localStorage.getItem(dateCookieName);
+        }
+
+        if (!entryDate || entryDate === '') {
+            entryDate = new Date().getTime().toString();
+            var dateExpirationTime = 34560000;
+            setCookie(dateCookieName, entryDate, dateExpirationTime);
             localStorage.setItem(dateCookieName, entryDate);
             sessionStorage.setItem(dateCookieName, entryDate);
         }
 
         var adParams = ['fbclid', 'gclid'];
         var isAdClick = false;
-        for (var ai = 0; ai < adParams.length; ai++) {
-            if (getParameterByName(adParams[ai])) { isAdClick = true; break; }
+        for (var i = 0; i < adParams.length; i++) {
+            if (getParameterByName(adParams[i])) {
+                isAdClick = true;
+                break;
+            }
         }
 
         var utmSource = getParameterByName('utm_source');
@@ -397,6 +368,7 @@
 
         var parametros = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
         var utms = {};
+
         var cookieUtmSource = getCookieValue('cookieUtmSource');
         var cookieUtmMedium = getCookieValue('cookieUtmMedium');
         var cookieUtmCampaign = getCookieValue('cookieUtmCampaign');
@@ -406,11 +378,11 @@
         function getReferrerHost() {
             var a = document.createElement('a');
             a.href = document.referrer;
-            return a.hostname || '';
+            return a.hostname;
         }
 
-        for (var pi = 0; pi < parametros.length; pi++) {
-            var el = parametros[pi];
+        for (var i = 0; i < parametros.length; i++) {
+            var el = parametros[i];
             if (el === "utm_source") {
                 utms[el] = getParameterByName(el) || (document.referrer ? (getParameterByName(el, document.referrer) || getReferrerHost()) : "direto");
             } else {
@@ -418,7 +390,8 @@
             }
         }
 
-        var scks = sck ? [sck] : [];
+        var scks = [];
+        if(sck) scks.push(sck);
         var srcValues = [];
         if (cookieUtmSource) srcValues.push(cookieUtmSource);
         if (cookieUtmMedium) srcValues.push(cookieUtmMedium);
@@ -430,109 +403,129 @@
         var currentParams = {};
         if (currentUrlParams.length > 0) {
             var pairs = currentUrlParams.split('&');
-            for (var ui = 0; ui < pairs.length; ui++) {
-                var pair = pairs[ui].split('=');
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i].split('=');
                 if (pair.length === 2) {
                     currentParams[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
                 }
             }
         }
 
-        var urlModified = false;
+        var modified = false;
         for (var key in utms) {
             if (utms.hasOwnProperty(key) && !currentParams.hasOwnProperty(key) && utms[key] !== "") {
                 currentParams[key] = utms[key];
-                urlModified = true;
+                modified = true;
             }
         }
+
         if (!currentParams.hasOwnProperty('src') && srcValues.length > 0) {
             currentParams['src'] = srcValues.join('|');
-            urlModified = true;
-        }
-        if (!currentParams.hasOwnProperty('sck') && scks.length > 0) {
-            currentParams['sck'] = scks.join('|');
-            urlModified = true;
+            modified = true;
         }
 
-        if (urlModified) {
+        if (!currentParams.hasOwnProperty('sck') && scks.length > 0) {
+            currentParams['sck'] = scks.join('|');
+            modified = true;
+        }
+
+        if (modified) {
             var newSearch = '?';
             var first = true;
-            for (var pk in currentParams) {
-                if (currentParams.hasOwnProperty(pk)) {
-                    if (!first) newSearch += '&';
-                    newSearch += encodeURIComponent(pk) + '=' + encodeURIComponent(currentParams[pk]);
+            for (var key in currentParams) {
+                if (currentParams.hasOwnProperty(key)) {
+                    if (!first) {
+                        newSearch += '&';
+                    }
+                    newSearch += encodeURIComponent(key) + '=' + encodeURIComponent(currentParams[key]);
                     first = false;
                 }
             }
-            window.history.replaceState(null, '', window.location.protocol + '//' + window.location.host + window.location.pathname + newSearch + window.location.hash);
+            var newURL = window.location.protocol + '//' + window.location.host + window.location.pathname + newSearch + window.location.hash;
+            window.history.replaceState(null, null, newURL);
         }
 
-        function updateElementHref(href) {
+        function updateElementHref(el, href) {
             try {
                 var elURL = document.createElement('a');
                 elURL.href = href;
-                if (elURL.host === window.location.host && elURL.pathname.indexOf('/checkout') === -1) return href;
-
+                if (elURL.host === window.location.host && !elURL.pathname.includes('/checkout')) return href;
+                
                 var elSearch = elURL.search ? elURL.search.substring(1) : '';
                 var elParams = {};
                 if (elSearch.length > 0) {
-                    var epairs = elSearch.split('&');
-                    for (var ei = 0; ei < epairs.length; ei++) {
-                        var ep = epairs[ei].split('=');
-                        if (ep.length === 2) elParams[decodeURIComponent(ep[0])] = decodeURIComponent(ep[1]);
+                    var pairs = elSearch.split('&');
+                    for (var i = 0; i < pairs.length; i++) {
+                        var pair = pairs[i].split('=');
+                        if (pair.length === 2) {
+                            elParams[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+                        }
                     }
                 }
-                var linkModified = false;
-                for (var lk in currentParams) {
-                    if (currentParams.hasOwnProperty(lk) && !elParams.hasOwnProperty(lk)) {
-                        elParams[lk] = currentParams[lk];
-                        linkModified = true;
+                var modified = false;
+
+                for (var key in currentParams) {
+                    if (currentParams.hasOwnProperty(key) && !elParams.hasOwnProperty(key)) {
+                        elParams[key] = currentParams[key];
+                        modified = true;
                     }
                 }
+
                 if (!elParams.hasOwnProperty('src') && srcValues.length > 0) {
                     elParams['src'] = srcValues.join('|');
-                    linkModified = true;
+                    modified = true;
                 }
+
                 if (!elParams.hasOwnProperty('sck') && scks.length > 0) {
                     elParams['sck'] = scks.join('|');
-                    linkModified = true;
+                    modified = true;
                 }
-                if (!linkModified) return href;
-                var ns = '?';
-                var nf = true;
-                for (var ek in elParams) {
-                    if (elParams.hasOwnProperty(ek)) {
-                        if (!nf) ns += '&';
-                        ns += encodeURIComponent(ek) + '=' + encodeURIComponent(elParams[ek]);
-                        nf = false;
+
+                if (modified) {
+                    var newSearch = '?';
+                    var first = true;
+                    for (var key in elParams) {
+                        if (elParams.hasOwnProperty(key)) {
+                            if (!first) {
+                                newSearch += '&';
+                            }
+                            newSearch += encodeURIComponent(key) + '=' + encodeURIComponent(elParams[key]);
+                            first = false;
+                        }
                     }
+                    return elURL.protocol + '//' + elURL.host + elURL.pathname + newSearch + elURL.hash;
+                } else {
+                    return href;
                 }
-                return elURL.protocol + '//' + elURL.host + elURL.pathname + ns + elURL.hash;
-            } catch (err) {
+            } catch (e) {
                 return href;
             }
         }
 
-        function trackLinks() {
+        var observer = new MutationObserver(function(mutations) {
             var links = document.getElementsByTagName('a');
-            for (var li = 0; li < links.length; li++) {
-                if (links[li].href && !links[li].hasAttribute('data-ml-tracked')) {
-                    var nh = updateElementHref(links[li].href);
-                    if (nh !== links[li].href) links[li].href = nh;
-                    links[li].setAttribute('data-ml-tracked', 'true');
+            for (var i = 0; i < links.length; i++) {
+                if (links[i].href && !links[i].hasAttribute('data-tracked')) {
+                    var newHref = updateElementHref(links[i], links[i].href);
+                    if (newHref !== links[i].href) {
+                        links[i].href = newHref;
+                    }
+                    links[i].setAttribute('data-tracked', 'true');
                 }
             }
-        }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
 
-        var observer = new MutationObserver(function () { trackLinks(); });
-        if (document.body) {
-            observer.observe(document.body, { childList: true, subtree: true });
-        } else {
-            document.addEventListener('DOMContentLoaded', function () {
-                observer.observe(document.body, { childList: true, subtree: true });
-            });
-        }
-        setTimeout(trackLinks, 1000);
+        setTimeout(function() {
+            var links = document.getElementsByTagName('a');
+            for (var i = 0; i < links.length; i++) {
+                if (links[i].href && !links[i].hasAttribute('data-tracked')) {
+                    links[i].href = updateElementHref(links[i], links[i].href);
+                    links[i].setAttribute('data-tracked', 'true');
+                }
+            }
+        }, 1000);
     })();
     </script>
   </body>

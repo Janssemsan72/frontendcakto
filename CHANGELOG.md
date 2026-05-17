@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- GTM: **snippet oficial** do Google (`https://www.googletagmanager.com/gtm.js?id=GTM-TKPCMTNB` + `ns.html` no mesmo domínio), como no modal “Instalar o Gerenciador de tags”; guarda de `/admin` no `<head>`; `preconnect`/`dns-prefetch` para `googletagmanager.com`. Substitui o loader Stape (`api.musiclovely.com.br/63grxzipls.js`). `adminMarketingOptOut` remove `gtm.js` e loaders Stape antigos. CSP `vercel.json` já inclui `*.googletagmanager.com`; GA4 MP no backend pode continuar em Stape (`api.musiclovely.com.br/mp/collect`) se configurado.
+- Tracking alinhado à branch **hotmart 2026**, com domínio Stape **`api.musiclovely.online`** (loader `63grxzipls.js`, `ns.html`, cookies UTM em `.musiclovely.online`, script inline UTM/`src`/`sck` + MutationObserver). Removidos `sck-bootstrap.js`, `MetaPixelProvider` no React (pixel via GTM/noscript no HTML) e redirect WebView dedicado. `getOrCreateSck()` volta a `crypto.randomUUID()` em `gtmTracking.ts`. Checkout: `window.location.replace`/`href` como na referência.
 
 - `useUtmParams.ts`: logs de tracking (`Parâmetros de tracking salvos`, navegação com UTMs) só em `import.meta.env.DEV`, para não poluir a consola em produção.
 
@@ -25,15 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Hotmart/Cakto: `src` montado como `utm_source|utm_medium|…` quando ausente na URL (`hotmartTrackingParams.ts`), alinhado à versão hotmart 2026; aplicado em `checkoutLinks` e `Checkout/index.tsx`.
+- CSP (`vercel.json`): `https://api.musiclovely.online` em `script-src`, `script-src-elem`, `connect-src` e `frame-src` para o loader Stape no site `www.musiclovely.online`.
 
-- `index.html`: script de persistência UTM/`src`/`sck` (hotmart 2026) com cookies em `.musiclovely.online` e `.musiclovely.com.br`, skip em `/admin`, sync de `sck` com `musiclovely_tracking_params`.
-
-- `public/sck-bootstrap.js` + `sckSession.ts`: gera e persiste `sck` (`{entrada}_{agora}`) **antes** do GTM; `dataLayer` evento `sck_ready`; evita registos no Stape Store só com fbc/fbp sem `sck`.
-
-- Checkout → Hotmart/Cakto: redirecionamento mais robusto (`navigateToExternalPayment`: `window.top`, link `target="_top"`, `location.replace`) e recuperação após timeout se o browser/WebView não sair da rota `/checkout` (liberta o botão e mostra link manual). Mitiga clientes presos em Processando… em Instagram/Facebook ou Safari. Novas chaves em `src/i18n/locales/pt.json` para o aviso e o CTA.
-
-- CSP (`vercel.json`): incluir `https://api.musiclovely.online` junto de `api.musiclovely.com.br` em `script-src`, `script-src-elem`, `connect-src` e `frame-src`, para iframes/scripts do GTM/Stape no domínio `.online` não serem bloqueados no site `www.musiclovely.online`.
+- `adminMarketingOptOut`: remove scripts do loader Stape em `.online` e `.com.br` ao entrar em rotas admin.
 
 - Build Vite: export de `trackPurchaseOnce` em `gtmTracking.ts` (usado por `PaymentSuccess.tsx`); evento `purchase` no dataLayer com deduplicação por pedido em `sessionStorage`.
 

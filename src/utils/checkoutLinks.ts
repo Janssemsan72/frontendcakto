@@ -4,8 +4,6 @@ import {
   isExternalPaymentUrl,
   isPaymentUrlStaleForCurrentGateway,
 } from "@/config/paymentCheckout";
-import { appendExternalCheckoutTracking } from "@/utils/hotmartTrackingParams";
-
 /**
  * Gera URL do checkout externo (Cakto ou Hotmart conforme VITE_PAYMENT_GATEWAY).
  * @param orderId ID do pedido
@@ -65,7 +63,11 @@ export function generateCaktoUrl(
   caktoParams.set('redirect_url', redirectUrl);
   
   if (utms) {
-    appendExternalCheckoutTracking(caktoParams, utms);
+    Object.entries(utms).forEach(([key, value]) => {
+      if (value && ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'src', 'sck'].includes(key)) {
+        caktoParams.set(key, value);
+      }
+    });
   }
   
   const finalUrl = `${checkoutBase}?${caktoParams.toString()}`;

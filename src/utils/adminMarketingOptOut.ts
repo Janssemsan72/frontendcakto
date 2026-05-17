@@ -13,7 +13,7 @@ export function stripMarketingTagsOnAdmin(): void {
   if (typeof document === "undefined") return;
   document
     .querySelectorAll(
-      'script[src*="googletagmanager.com/gtm.js"], script[src*="api.musiclovely.com.br"]',
+      'script[src*="googletagmanager.com/gtm.js"], script[src*="api.musiclovely.com.br"], script[src*="api.musiclovely.online"]',
     )
     .forEach((n) => {
     n.parentNode?.removeChild(n);
